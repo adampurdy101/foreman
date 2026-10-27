@@ -230,7 +230,117 @@ function renderRail() {
   if (state.panel === "day" && state.selected) return renderDayPanel(r);
   if (state.panel === "unscheduled") return renderUnscheduledPanel(r);
   if (state.panel === "tomorrow") return renderTomorrowPanel(r);
+  if (state.panel === "brain") return renderBrainPanel(r);
   renderSkinny(r);
+}
+
+// ---------- Foreman brain (Supabase edge function foreman-brain) ----------
+const brain = { busy: false, log: [], history: [], batch: null, questions: null, lastBatch: null };
+
+async function askBrain(text) {
+  if (!text || brain.busy) return;
+  brain.busy = true; brain.questions = null;
+  brain.log.push({ who: "you", text });
+  state.panel = "brain"; state.openId = null; state.editId = null; render();
+  const { data: s } = await db.auth.getSession();
+  const now = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  try {
+    const res = await fetch(`${CONFIG.SUPABASE_URL}/functions/v1/foreman-brain`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: CONFIG.SUPABASE_KEY, Authorization: `Bearer ${s.session.access_token}` },
+      body: JSON.stringify({ text, today: todayISO(), now, history: brain.history, batch_id: brain.batch }),
+    });
+    const out = await res.json();
+    brain.history.push({ role: "user", content: text });
+    if (out.reply) brain.history.push({ role: "assistant", content: out.reply });
+    brain.history = brain.history.slice(-10);
+    brain.log.push({ who: "foreman", text: out.reply || "(no reply)", actions: out.actions || [], questions: out.questions || null });
+    if (out.pending) { brain.batch = out.batch_id; brain.questions = out.questions; }
+    else { brain.batch = null; if ((out.actions || []).length) brain.lastBatch = out.batch_id; }
+  } catch (e) {
+    brain.log.push({ who: "foreman", text: "Couldn't reach the brain: " + (e.message || e) });
+  }
+  brain.busy = false;
+  await loadAll();
+}
+
+function answerQuestions(answers) {
+  const text = "My answers: " + answers.map((a) => `${a.q} → ${a.a}`).join("; ") + ". Go ahead and file it.";
+  askBrain(text);
+}
+
+async function undoLastBatch() {
+  if (!brain.lastBatch) return;
+  const { data: moves, error } = await db.from("fm_moves").select("*").eq("batch_id", brain.lastBatch).order("id", { ascending: false });
+  if (error || !moves?.length) { toast("Nothing to undo"); return; }
+  for (const m of moves) {
+    if (m.kind === "add" && m.task_id) await db.from("fm_tasks").delete().eq("id", m.task_id);
+    else if ((m.kind === "move" || m.kind === "update" || m.kind === "complete") && m.task_id && m.before) {
+      const b = { ...m.before }; delete b.id; if (m.kind === "complete") b.done_at = null;
+      await db.from("fm_tasks").update(b).eq("id", m.task_id);
+    } else if (m.kind === "delete" && m.before) {
+      const b = { ...m.before }; delete b.id; await db.from("fm_tasks").insert(b);
+    }
+  }
+  await db.from("fm_moves").delete().eq("batch_id", brain.lastBatch);
+  brain.log.push({ who: "foreman", text: `Undid ${moves.length} change${moves.length === 1 ? "" : "s"}.` });
+  brain.lastBatch = null;
+  await loadAll();
+}
+
+function renderBrainPanel(r) {
+  panelHeader(r, "Foreman", brain.busy ? "thinking…" : "");
+  const box = el("div", "brain");
+  brain.log.slice(-8).forEach((m) => {
+    const b = el("div", "bubble " + (m.who === "you" ? "you" : "fm"));
+    b.append(el("div", "who", m.who === "you" ? "You" : "Foreman"));
+    b.append(el("div", "txt", m.text));
+    if (m.actions && m.actions.length) {
+      const ul = el("ul", "acts");
+      m.actions.forEach((a) => {
+        let line = "";
+        if (a.kind === "add") line = `Added "${a.title}"${a.to ? " on " + fmtShort(a.to) : " (unscheduled)"}`;
+        else if (a.kind === "move") line = `Moved "${a.title}" ${a.from ? fmtShort(a.from) : "unscheduled"} → ${a.to ? fmtShort(a.to) : "unscheduled"}${a.reason ? ": " + a.reason : ""}`;
+        else if (a.kind === "update") line = `Updated "${a.title}"${a.reason ? ": " + a.reason : ""}`;
+        else if (a.kind === "complete") line = `Done: "${a.title}"`;
+        else if (a.kind === "delete") line = `Deleted "${a.title}"`;
+        ul.append(el("li", "", line));
+      });
+      b.append(ul);
+    }
+    box.append(b);
+  });
+  if (brain.busy) box.append(el("div", "hint", "Working on it…"));
+  r.append(box);
+
+  if (brain.questions && !brain.busy) {
+    const qwrap = el("div", "questions");
+    const picks = {};
+    brain.questions.forEach((q) => {
+      const card = el("div", "q");
+      card.append(el("div", "qt", q.question));
+      const opts = el("div", "opts");
+      q.options.forEach((o) => {
+        const b = el("button", "btn sm", o);
+        b.addEventListener("click", () => { picks[q.id] = { q: q.question, a: o }; opts.querySelectorAll("button").forEach((x) => x.classList.remove("primary")); b.classList.add("primary"); });
+        opts.append(b);
+      });
+      card.append(opts); qwrap.append(card);
+    });
+    const go = el("button", "btn primary", "Send answers");
+    go.addEventListener("click", () => { const a = Object.values(picks); if (a.length < brain.questions.length) { toast("Answer each one"); return; } answerQuestions(a); });
+    qwrap.append(go);
+    r.append(qwrap);
+  }
+
+  const foot = el("div", "actions");
+  const inp = el("input"); inp.type = "text"; inp.placeholder = "Say more…"; inp.className = "brain-input";
+  inp.addEventListener("keydown", (e) => { if (e.key === "Enter" && inp.value.trim()) { const v = inp.value.trim(); inp.value = ""; askBrain(v); } });
+  const mic = el("button", "mic"); mic.type = "button"; mic.innerHTML = MIC_SVG; mic.title = "Speak";
+  attachMic(mic, (v) => askBrain(v), (v) => { inp.value = v; });
+  foot.append(inp, mic);
+  if (brain.lastBatch && !brain.busy) { const u = el("button", "btn sm", "Undo last"); u.addEventListener("click", undoLastBatch); foot.append(u); }
+  r.append(foot);
 }
 
 function miniRow(t) {
@@ -337,7 +447,13 @@ function renderTomorrowPanel(r) {
   taWrap.append(mic);
   wrap.append(taWrap);
   const act = el("div", "actions");
-  const save = el("button", "btn primary", "Pencil these in");
+  const plan = el("button", "btn primary", "Plan it with Foreman");
+  plan.addEventListener("click", () => {
+    const v = ta.value.trim(); if (!v) return;
+    ta.value = "";
+    askBrain(`Tomorrow (${tmr}) I want to work on: ${v}. Pencil these in on tomorrow as planned, and reshuffle anything else on tomorrow that no longer fits.`);
+  });
+  const save = el("button", "btn", "Just pencil in (no reshuffle)");
   save.addEventListener("click", async () => {
     const lines = ta.value.split("\n").map((s) => s.trim()).filter(Boolean);
     if (!lines.length) return;
@@ -348,7 +464,7 @@ function renderTomorrowPanel(r) {
     ta.value = "";
     toast(`${lines.length} penciled in for tomorrow`);
   });
-  act.append(save);
+  act.append(plan, save);
   wrap.append(act);
   r.append(wrap);
 
@@ -527,7 +643,9 @@ function attachMic(btn, onFinal, onInterim) {
 }
 
 function initMic() {
-  attachMic($("mic-btn"), (v) => { $("quick-input").value = ""; quickAdd(v); }, (v) => { $("quick-input").value = v; });
+  // the mic goes straight to Foreman's brain: brain-dump, it sorts it out
+  attachMic($("mic-btn"), (v) => { $("quick-input").value = ""; askBrain(v); }, (v) => { $("quick-input").value = v; });
+  $("tell-btn").addEventListener("click", () => { const v = $("quick-input").value.trim(); if (!v) { $("quick-input").focus(); return; } $("quick-input").value = ""; askBrain(v); });
 }
 
 // ---------- full screen ----------

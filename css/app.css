@@ -151,6 +151,20 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 /* ---------- tomorrow panel ---------- */
 .tomorrow textarea { width: 100%; min-height: 110px; padding: 8px; border: 1px solid var(--line-2); border-radius: 6px; }
 
+/* ---------- brain panel ---------- */
+.brain { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.bubble { border-radius: 8px; padding: 8px 10px; font-size: 14px; line-height: 1.5; }
+.bubble.you { background: var(--accent-bg); color: var(--normal-ink); margin-left: 24px; }
+.bubble.fm { background: #fff; border: 1px solid var(--line); margin-right: 24px; }
+.bubble .who { font-size: 11px; color: var(--ink-3); margin-bottom: 2px; text-transform: uppercase; letter-spacing: .04em; }
+.bubble .txt { white-space: pre-wrap; }
+.bubble .acts { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: var(--ink-2); }
+.questions { border: 1px solid var(--high-line); background: var(--high-bg); border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+.questions .q { margin-bottom: 8px; }
+.questions .qt { font-weight: 600; color: var(--high-ink); margin-bottom: 4px; }
+.questions .opts { display: flex; gap: 6px; flex-wrap: wrap; }
+.brain-input { flex: 1; min-width: 160px; padding: 7px 9px; border: 1px solid var(--line-2); border-radius: 6px; }
+
 /* ---------- toast ---------- */
 .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.18); }
 
