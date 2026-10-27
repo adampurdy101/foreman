@@ -189,10 +189,12 @@ function renderMonth(body) {
   ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach((d) => grid.append(el("div", "dow", d)));
   const first = new Date(c.getFullYear(), c.getMonth(), 1);
   const start = addDays(first, -first.getDay());
-  for (let i = 0; i < 42; i++) {
+  const lastDay = new Date(c.getFullYear(), c.getMonth() + 1, 0).getDate();
+  const rows = Math.ceil((first.getDay() + lastDay) / 7);
+  grid.style.setProperty("--rows", rows);
+  for (let i = 0; i < rows * 7; i++) {
     const d = addDays(start, i);
-    if (i >= 35 && d.getMonth() !== c.getMonth()) break;
-    grid.append(dayCell(d, { other: d.getMonth() !== c.getMonth() }));
+    grid.append(dayCell(d, { other: d.getMonth() !== c.getMonth(), max: rows >= 6 ? 3 : 4 }));
   }
   body.append(grid);
 }
@@ -328,7 +330,12 @@ function renderTomorrowPanel(r) {
   const wrap = el("div", "tomorrow");
   wrap.append(el("div", "hint", "What do you want to work on tomorrow? One per line. They land as Planned (dashed) on tomorrow; the 5:30 a.m. plan builds the day around them."));
   const ta = el("textarea"); ta.placeholder = "Miner L2 leave-outs\nC1 DWG export\n…";
-  wrap.append(ta);
+  const taWrap = el("div", "ta-wrap"); taWrap.append(ta);
+  const mic = el("button", "mic"); mic.type = "button"; mic.title = "Speak it"; mic.setAttribute("aria-label", "Speak tomorrow's list");
+  mic.innerHTML = MIC_SVG;
+  attachMic(mic, (text) => { ta.value = (ta.value ? ta.value.replace(/\s*$/, "\n") : "") + text; });
+  taWrap.append(mic);
+  wrap.append(taWrap);
   const act = el("div", "actions");
   const save = el("button", "btn primary", "Pencil these in");
   save.addEventListener("click", async () => {
@@ -501,20 +508,38 @@ async function quickAdd(text) {
 }
 
 // ---------- voice (Web Speech API) ----------
-function initMic() {
-  const btn = $("mic-btn");
+const MIC_SVG = '<svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>';
+
+// attach push-to-talk to a button; onFinal(text) fires once when listening stops
+function attachMic(btn, onFinal, onInterim) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { btn.title = "Voice needs Chrome or Edge"; btn.disabled = true; return; }
-  let rec = null;
+  let rec = null, heard = "";
   btn.addEventListener("click", () => {
     if (rec) { rec.stop(); return; }
-    rec = new SR(); rec.lang = "en-US"; rec.interimResults = true;
+    rec = new SR(); rec.lang = "en-US"; rec.interimResults = true; heard = "";
     btn.classList.add("listening");
-    rec.onresult = (e) => { $("quick-input").value = Array.from(e.results).map((r) => r[0].transcript).join(""); };
-    rec.onend = () => { btn.classList.remove("listening"); rec = null; const v = $("quick-input").value.trim(); if (v) { quickAdd(v); $("quick-input").value = ""; } };
+    rec.onresult = (e) => { heard = Array.from(e.results).map((r) => r[0].transcript).join(""); if (onInterim) onInterim(heard); };
+    rec.onend = () => { btn.classList.remove("listening"); rec = null; const v = heard.trim(); if (v) onFinal(v); };
     rec.onerror = () => { btn.classList.remove("listening"); rec = null; };
     rec.start();
   });
+}
+
+function initMic() {
+  attachMic($("mic-btn"), (v) => { $("quick-input").value = ""; quickAdd(v); }, (v) => { $("quick-input").value = v; });
+}
+
+// ---------- full screen ----------
+function initFullscreen() {
+  const btn = $("full-btn");
+  const sync = () => { btn.textContent = document.fullscreenElement ? "⛶ Exit full screen" : "⛶ Full screen"; };
+  btn.addEventListener("click", () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(() => toast("Full screen not available here"));
+  });
+  document.addEventListener("fullscreenchange", sync);
+  sync();
 }
 
 // ---------- nav ----------
@@ -539,6 +564,7 @@ function wire() {
     if (e.key === "/" && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "TEXTAREA") { e.preventDefault(); $("quick-input").focus(); }
   });
   initMic();
+  initFullscreen();
 }
 
 // ---------- boot ----------
