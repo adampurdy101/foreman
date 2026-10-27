@@ -1,60 +1,64 @@
-# FOREMAN — operating rules for Claude
+# FOREMAN — technical notes
 
-Foreman is Adam's organizer. One calendar, one plan, one place. Its job is to keep Adam
-organized, focused and on track, and to keep things from getting cluttered. Adam has ADD:
-sparse by default, full detail on click, one clear next thing. This file is the standing
-prompt Claude reads before touching Foreman data or code.
+Foreman is a personal organizer: a month-first calendar with a Claude "brain" that files,
+schedules and reshuffles tasks. This file is the technical reference for the repo. The
+owner's operating rulebook (how the assistant manages him) is private and lives in the
+Supabase table `fm_rules`, not here.
 
-## Where things live
-- App: https://adampurdy101.github.io/foreman/
-- Code: github.com/adampurdy101/foreman (push to `main` deploys)
-- Data: Supabase project `fzsfizqkolkxkorgvtcl`, tables `fm_tasks`, `fm_jobs`, `fm_moves`
-- Owner user_id: 30cbcbfa-7261-47de-8c91-3d97557fc5f9 (every row needs it)
-- Board (decisions and status): "Get Organized — Board" Claude doc
+## Pieces
+| Piece | Does | Lives |
+|---|---|---|
+| App | Month/Week/Day, Work/Home/Both, rail, Quick add, Tell Foreman, Tomorrow | `index.html`, `css/app.css`, `js/app.js` → GitHub Pages |
+| Brain | Instant filing and reshuffle from the mic | Supabase edge function `foreman-brain` (`supabase/functions/foreman-brain`) |
+| Scheduled runs | Morning plan, end of day | Claude scheduled tasks (read `fm_rules` for the rulebook) |
+| Data | Tasks, jobs, moves, brain log, rules | Supabase tables `fm_tasks`, `fm_jobs`, `fm_moves`, `fm_brain_log`, `fm_rules` (RLS, owner only) |
 
-## The data model (fm_tasks)
+The Supabase URL and publishable key in `js/config.js` are public by design; Row Level
+Security plus the owner-only login protect the data. No secrets live in this repo.
+
+## Data model (fm_tasks)
 | field | meaning |
 |---|---|
 | title, notes | what it is |
-| bucket | `work` or `home` (two calendars) |
+| bucket | `work` or `home` |
 | priority | `urgent` !! · `high` ▲ · `normal` ● · `low` – |
-| status | `not_started` · `working` · `waiting` (+ `waiting_on`) · `done` |
-| job | name from fm_jobs (Miner, MML 1 & 2, Rosey, Alaska C1, EvergreenHealth bid, WSH, Dusty / layout, Title blocks, Mom, Japan trip, House, Kids) |
-| size | `15m` · `1h` · `half` · `full` |
-| scheduled_date | the day it sits on the calendar. NULL = unscheduled (inbox) |
-| target_date | when Adam would like it done |
-| dropdead_date | must be done by. Never schedule past this |
-| planned | true = penciled in from the end-of-day "Tomorrow" check-in (dashed) |
-| promised_to | a person Adam owes this to. Never move these without telling him |
-| nag_hours | 0 = no nag; otherwise nag every N hours until done |
-| source | `app` · `quick` · `tomorrow` · `claude` · `imported` · `gmail` |
+| status | `not_started` · `working` · `waiting` (+ `waiting_on`) · `done` (+ `done_at`) |
+| job | name from `fm_jobs` |
+| size | `15m` · `1h` · `half` · `full` (default `1h`) |
+| scheduled_date | the day it sits on. NULL = unscheduled (inbox) |
+| target_date | would like it done by |
+| dropdead_date | must be done by; never schedule past it |
+| planned | true = penciled in from Tomorrow (dashed) |
+| promised_to | a person this is owed to; never moved without the owner's say-so |
+| nag_hours | 0 = none; else nag every N hours until done |
+| source | `app` · `quick` · `tomorrow` · `brain` · `claude` · `morning` · `eod` · `imported` · `gmail` |
 
-## Rules Claude follows
-1. **Nothing goes in without a date, a bucket and a priority.** If Adam gives a task in chat
-   and any of those is missing, ask ONE question, then file it. Default bucket = work.
-2. **Two dates.** Always ask for target and drop-dead when a task clearly has a deadline.
-   Drop-dead may be blank. Target may be blank.
-3. **Reshuffle rule** (end-of-day and morning plan): push Low and Normal toward their target,
-   never past a drop-dead, leave anything with `promised_to` where it is, keep Urgent on
-   today. Log every move in `fm_moves` with a reason and show Adam "what moved and why"
-   before it sticks. He approves or undoes.
-4. **Planned items** (dashed) are Adam's intent for tomorrow. The morning plan builds the day
-   around them and flags anything it had to bump. Turn `planned` off once the day starts.
-5. **Status differs by shape and words, never color alone.** Keep it that way in any UI change.
-6. **Light background, dark text, no scanlines.** Always.
-7. **Keep it sparse.** Month view shows chips only. Detail lives behind a click.
-8. **Done is done.** Mark `status='done'`, set `done_at`. Don't delete history.
-9. Reading "what's on my plate" = unscheduled + today + overdue (dropdead < today) +
-   anything with target < today. Lead with Urgent, then promises to people.
-10. Foreman is standalone and travels with Adam. Never move its data into PCI systems.
+Every change the brain or a scheduled run makes is logged in `fm_moves` (batch_id, kind
+add/move/update/complete/delete, before, after, reason) so the app's Undo works.
 
-## Quick-add grammar (app and chat)
-`!!` or "urgent" · `!` or "high" · "low" · `#home` / `#work` · `@miner` (job prefix) ·
+## Scheduling rules (summary)
+1. Nothing goes in without bucket, priority, size and a day.
+2. A day holds 8 working hours (7–4 with lunch). Over that, something moves.
+3. Order: urgent → promises due → drop-deads within 2 days → planned → high → normal → low.
+4. Move first, show, undo. Every move carries a one-line reason.
+5. Never past a drop-dead. Never move a promised item unless told. Urgent stays on today.
+6. Push LOW then NORMAL toward their targets when a day is full.
+7. Home calendar: same filing, lighter touch.
+8. Done is done; delete only when told or for an exact duplicate.
+
+## Brain tools
+`list_jobs`, `list_tasks`, `day_load`, `add_task`, `update_task` (moves need a reason;
+refuses promised items and past-drop-dead), `complete_task`, `delete_task`, `ask_adam`
+(max 3 A/B/C questions, then stop). Model from the `FOREMAN_MODEL` secret
+(default `claude-sonnet-4-5`). Anthropic key in Supabase Edge Function secrets only.
+
+## Quick-add grammar
+`!!` or "urgent" · `!` or "high" · "low" · `#home` / `#work` · `@<job prefix>` ·
 "today" / "tomorrow" / "fri" / "10/30". Example: `Send James layout fri !! @miner`
 
 ## Stages
-1. Month/Week/Day, Work/Home/Both, rail, quick add + mic, Tomorrow pencil-in — DONE
-2. Google Calendar sync (tasks with dates → events with alerts; meetings shown in Foreman)
-3. Jobs tab with timeline bars; drag between days (drag is already in)
-4. Nag engine (scheduled task reads nag_hours, pings phone), Gmail asks → unscheduled
-5. Morning plan reads Foreman, reshuffle with approval, phone-first polish
+1. Calendar, rail, quick add + mic, Tomorrow, brain, undo — done
+2. Scheduled runs (morning, end of day) — done
+3. Google Calendar sync (dated tasks → events with alerts; meetings as busy blocks)
+4. Jobs tab with timeline bars; Gmail asks → unscheduled; hourly nudge
+5. Phone-first polish
