@@ -1,0 +1,13 @@
+{
+  "name": "Foreman",
+  "short_name": "Foreman",
+  "description": "Adam's organizer — one calendar, one plan, one place.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f5f1",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

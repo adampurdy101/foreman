@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Foreman</title>
+  <meta name="theme-color" content="#ffffff">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <section id="login-screen" class="login hidden">
+    <form id="login-form" class="login-card">
+      <h1>Foreman</h1>
+      <p class="sub">Your organizer. Private to you.</p>
+      <label>Email <input id="login-email" type="email" autocomplete="username" required></label>
+      <label>Password <input id="login-password" type="password" autocomplete="current-password" required></label>
+      <button id="login-submit" type="submit" class="btn primary">Sign in</button>
+      <p id="login-msg" class="msg"></p>
+    </form>
+  </section>
+
+  <!-- APP -->
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <span class="brand">Foreman</span>
+
+      <div class="seg" id="bucket-seg" role="group" aria-label="Calendar">
+        <button data-bucket="work" class="on">Work</button>
+        <button data-bucket="home">Home</button>
+        <button data-bucket="both">Both</button>
+      </div>
+
+      <div class="seg" id="view-seg" role="group" aria-label="View">
+        <button data-view="month" class="on">Month</button>
+        <button data-view="week">Week</button>
+        <button data-view="day">Day</button>
+      </div>
+
+      <form id="quick-add" class="quick" autocomplete="off">
+        <span class="plus" aria-hidden="true">+</span>
+        <input id="quick-input" type="text" placeholder="Quick add… (e.g. &quot;Send James layout fri !!&quot;)">
+        <button type="button" id="mic-btn" class="mic" title="Speak it" aria-label="Speak a task">🎤</button>
+      </form>
+
+      <button id="tomorrow-btn" class="btn">Tomorrow</button>
+      <button id="logout-btn" class="btn ghost" title="Sign out">Sign out</button>
+    </header>
+
+    <main class="layout" id="layout">
+      <section class="cal" id="cal">
+        <div class="cal-head">
+          <button id="prev-btn" class="btn ghost" aria-label="Previous">‹</button>
+          <h2 id="cal-title">October 2026</h2>
+          <button id="next-btn" class="btn ghost" aria-label="Next">›</button>
+          <button id="today-btn" class="btn ghost">Today</button>
+          <span class="legend">
+            <span class="chip p-urgent">!! Urgent</span>
+            <span class="chip p-high">▲ High</span>
+            <span class="chip p-normal">● Normal</span>
+            <span class="chip p-low">– Low</span>
+            <span class="chip planned">Planned</span>
+          </span>
+        </div>
+        <div id="cal-body" class="cal-body"></div>
+      </section>
+
+      <aside class="rail" id="rail">
+        <div id="rail-body"></div>
+      </aside>
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
