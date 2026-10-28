@@ -175,3 +175,22 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
   .day { min-height: 64px; }
   .legend { display: none; }
 }
+
+/* ---------- meetings (PCI Outlook) — shape + wording, not color alone ---------- */
+/* ■ solid = you go, counts on your day · ◌ dashed = invited, not counted · ◇ = holiday / all day */
+.mtg { font-size: 12px; line-height: 1.45; padding: 0 6px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+.mtg.going { background: #e9e8e3; border: 1px solid var(--ink-2); font-weight: 600; }
+.mtg.invited { background: transparent; border: 1px dashed var(--line-2); color: var(--ink-2); }
+.mtg.allday { background: transparent; border: 1px solid var(--line); color: var(--ink-3); font-style: italic; }
+.mtgs { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.mtgs .mtg { font-size: 14px; padding: 5px 8px; white-space: normal; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; cursor: default; }
+.mtgs .mtg .mk { width: 1em; text-align: center; }
+.mtgs .mtg .tm { min-width: 92px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.mtgs .mtg .tt { flex: 1; min-width: 140px; }
+.mtgs .mtg .tag { font-size: 12px; color: var(--ink-2); }
+.mtgs .mtg .btn { margin-left: auto; }
+.load { font-size: 14px; color: var(--ink-2); margin: 2px 0 10px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.load.over { color: var(--urgent-ink); border-color: var(--urgent-line); background: var(--urgent-bg); font-weight: 600; }
+.day .num .count.over { color: var(--urgent-ink); font-weight: 700; }
+.dayview h3 { font-size: 16px; margin: 10px 0 6px; display: flex; gap: 8px; align-items: baseline; }
+.dayview h3 .muted { font-weight: 400; color: var(--ink-3); font-size: 12px; }

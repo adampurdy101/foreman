@@ -42,6 +42,8 @@ const state = {
   editId: null,                                          // task in edit mode
   tasks: [],
   jobs: [],
+  meetings: [],                                          // PCI Outlook meetings (titles + times only)
+  meetingsSync: null,
   showDone: false,
 };
 
@@ -52,13 +54,19 @@ function toast(msg) {
 
 // ---------- data ----------
 async function loadAll() {
-  const [t, j] = await Promise.all([
+  const from = iso(addDays(new Date(), -45)), to = iso(addDays(new Date(), 120));
+  const [t, j, m] = await Promise.all([
     db.from("fm_tasks").select("*").order("sort").order("created_at"),
     db.from("fm_jobs").select("*").eq("active", true).order("bucket").order("sort"),
+    db.from("fm_meetings").select("id,title,start_at,end_at,all_day,attending,day,updated_at").gte("day", from).lte("day", to).order("start_at"),
   ]);
   if (t.error) { toast("Load failed: " + t.error.message); return; }
   state.tasks = t.data || [];
   state.jobs = j.data || [];
+  if (!m.error) {
+    state.meetings = m.data || [];
+    state.meetingsSync = state.meetings.reduce((a, x) => (x.updated_at > a ? x.updated_at : a), "") || null;
+  }
   render();
 }
 
@@ -111,6 +119,7 @@ function subscribe() {
   if (liveChannel) { try { db.removeChannel(liveChannel); } catch (e) {} }
   liveChannel = db.channel("fm_tasks_live_" + Date.now())
     .on("postgres_changes", { event: "*", schema: "public", table: "fm_tasks" }, () => refresh())
+    .on("postgres_changes", { event: "*", schema: "public", table: "fm_meetings" }, () => { clearTimeout(subscribe._m); subscribe._m = setTimeout(refresh, 1500); })
     .subscribe((status) => {
       if (status === "SUBSCRIBED") refresh();
       if (status === "CLOSED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") setTimeout(subscribe, 3000);
@@ -129,6 +138,75 @@ const inBucket = (t) => state.bucket === "both" || t.bucket === state.bucket;
 const visible = (t) => inBucket(t) && (state.showDone || t.status !== "done");
 const tasksOn = (dateISO) => state.tasks.filter((t) => visible(t) && t.scheduled_date === dateISO).sort(byPriority);
 const unscheduled = () => state.tasks.filter((t) => visible(t) && !t.scheduled_date).sort(byPriority);
+// ---------- meetings (PCI Outlook, read-only, work calendar) ----------
+const SIZE_HRS = { "15m": 0.25, "1h": 1, half: 4, full: 8 };
+const DAY_HRS = 8;
+const showMeetings = () => state.bucket !== "home";
+const meetingsOn = (dISO) => showMeetings() ? state.meetings.filter((m) => m.day === dISO) : [];
+const timedOn = (dISO) => meetingsOn(dISO).filter((m) => !m.all_day);
+const allDayOn = (dISO) => meetingsOn(dISO).filter((m) => m.all_day);
+const fmtTime = (ts) => new Date(ts).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(":00", "").replace(" AM", "a").replace(" PM", "p");
+const mtgHrs = (m) => Math.max(0, (new Date(m.end_at) - new Date(m.start_at)) / 3600000);
+const fmtHrs = (h) => (Math.round(h * 4) / 4).toString().replace(/\.0$/, "") + " h";
+// what counts against the 8 h day: meetings he attends + work tasks on that day
+function dayLoad(dISO) {
+  const mtg = timedOn(dISO).filter((m) => m.attending).reduce((a, m) => a + mtgHrs(m), 0);
+  const work = state.tasks.filter((t) => t.bucket === "work" && t.status !== "done" && t.scheduled_date === dISO)
+    .reduce((a, t) => a + (SIZE_HRS[t.size] ?? 1), 0);
+  return { mtg, work, total: mtg + work, free: DAY_HRS - mtg - work };
+}
+async function setAttending(m, attending) {
+  // applies to every meeting with this exact title (the whole series)
+  const { data: s } = await db.auth.getSession();
+  const uid = s?.session?.user?.id;
+  await db.from("fm_meeting_rules").delete().eq("match_title", m.title);
+  const ins = await db.from("fm_meeting_rules").insert({ user_id: uid, match_title: m.title, attending, note: "set in app" });
+  if (ins.error) { toast("Couldn't save: " + ins.error.message); return; }
+  const up = await db.from("fm_meetings").update({ attending }).eq("title", m.title);
+  if (up.error) { toast("Couldn't save: " + up.error.message); return; }
+  state.meetings.forEach((x) => { if (x.title === m.title) x.attending = attending; });
+  toast(attending ? `Counting "${m.title}" on your day` : `"${m.title}" no longer counts`);
+  render();
+}
+function meetingLine(m, { compact = false } = {}) {
+  const cls = "mtg " + (m.all_day ? "allday" : m.attending ? "going" : "invited");
+  const mark = m.all_day ? "◇" : m.attending ? "■" : "◌";
+  const when = m.all_day ? "All day" : `${fmtTime(m.start_at)}–${fmtTime(m.end_at)}`;
+  const n = el("div", cls);
+  if (compact) n.textContent = m.all_day ? `${mark} ${m.title}` : `${mark} ${fmtTime(m.start_at)} ${m.title}`;
+  else n.innerHTML = `<span class="mk">${mark}</span><span class="tm">${esc(when)}</span><span class="tt">${esc(m.title)}</span>`;
+  n.title = `${m.title} · ${when} · ${m.all_day ? "Holiday / all day" : m.attending ? "You're in this one — counts against your day" : "Invited — not counted on your day"}`;
+  return n;
+}
+function meetingCard(m) {
+  const row = meetingLine(m);
+  row.classList.add("card");
+  if (!m.all_day) {
+    const tag = el("span", "tag", m.attending ? "You go · counts" : "Invited · not counted");
+    const b = el("button", "btn sm", m.attending ? "I don't go" : "I go to this");
+    b.title = "Applies to every meeting with this name";
+    b.addEventListener("click", (e) => { e.stopPropagation(); setAttending(m, !m.attending); });
+    row.append(tag, b);
+  }
+  return row;
+}
+function loadLine(dISO) {
+  const L = dayLoad(dISO);
+  const over = L.total > DAY_HRS;
+  const n = el("div", "load" + (over ? " over" : ""));
+  n.textContent = `${over ? "!! Over by " + fmtHrs(L.total - DAY_HRS) + " · " : ""}Work ${fmtHrs(L.work)} + meetings ${fmtHrs(L.mtg)} = ${fmtHrs(L.total)} of 8 h`;
+  return n;
+}
+function meetingsSection(r, dISO, title = "Meetings") {
+  const ms = meetingsOn(dISO);
+  if (!ms.length) return;
+  const h = el("h3"); h.append(title, el("span", "muted", "from your PCI Outlook"));
+  r.append(h);
+  const box = el("div", "mtgs");
+  ms.sort((a, b) => (a.all_day === b.all_day ? a.start_at.localeCompare(b.start_at) : a.all_day ? -1 : 1)).forEach((m) => box.append(meetingCard(m)));
+  r.append(box);
+}
+
 function byPriority(a, b) {
   return (PRI_ORDER[a.priority] - PRI_ORDER[b.priority]) || (a.sort - b.sort) || (a.id - b.id);
 }
@@ -196,8 +274,25 @@ function dayCell(d, { other = false, max = 4 } = {}) {
   const items = tasksOn(dISO);
   const num = el("div", "num");
   num.append(el("span", "", String(d.getDate())));
-  if (items.length) num.append(el("span", "count", `${items.length}`));
+  const weekday = d.getDay() !== 0 && d.getDay() !== 6;
+  const L = dayLoad(dISO);
+  if (showMeetings() && weekday && !other && (L.total > 0)) {
+    const over = L.total > DAY_HRS;
+    const ld = el("span", "count" + (over ? " over" : ""), `${over ? "!! " : ""}${fmtHrs(L.total)}/8`);
+    ld.title = `Work ${fmtHrs(L.work)} + meetings you attend ${fmtHrs(L.mtg)}${over ? " — over the 8 h day" : ""}`;
+    num.append(ld);
+  } else if (items.length) num.append(el("span", "count", `${items.length}`));
   cell.append(num);
+  const going = timedOn(dISO).filter((m) => m.attending);
+  const invited = timedOn(dISO).filter((m) => !m.attending);
+  allDayOn(dISO).forEach((m) => cell.append(meetingLine(m, { compact: true })));
+  going.forEach((m) => cell.append(meetingLine(m, { compact: true })));
+  if (max > 4) invited.forEach((m) => cell.append(meetingLine(m, { compact: true })));
+  else if (invited.length) {
+    const inv = el("div", "mtg invited", `◌ ${invited.length} invited`);
+    inv.title = invited.map((m) => `${fmtTime(m.start_at)} ${m.title}`).join("\n") + "\n(not counted on your day)";
+    cell.append(inv);
+  }
   items.slice(0, max).forEach((t) => cell.append(chipFor(t)));
   if (items.length > max) cell.append(el("div", "more", `+${items.length - max} more`));
 
@@ -248,6 +343,7 @@ function renderDay(body) {
   $("cal-title").textContent = fmtLong(dISO);
   const wrap = el("div", "dayview");
   const items = tasksOn(dISO);
+  if (showMeetings()) { wrap.append(loadLine(dISO)); meetingsSection(wrap, dISO); if (meetingsOn(dISO).length) wrap.append(el("h3", "", "Tasks")); }
   if (!items.length) wrap.append(el("div", "empty", "Nothing on this day. Drag something here or use Quick add."));
   items.forEach((t) => wrap.append(itemCard(t)));
   body.append(wrap);
@@ -388,6 +484,15 @@ function renderSkinny(r) {
   const h = el("h3"); h.append("Today", el("span", "muted", fmtShort(today)));
   r.append(h);
   const todayItems = tasksOn(today);
+  if (showMeetings()) {
+    r.append(loadLine(today));
+    const ms = meetingsOn(today).sort((a, b) => a.start_at.localeCompare(b.start_at));
+    if (ms.length) {
+      const mb = el("div", "mtgs");
+      ms.forEach((m) => { const n = meetingLine(m); n.addEventListener("click", () => openDay(today)); mb.append(n); });
+      r.append(mb);
+    }
+  }
   const box = el("div", "mini");
   todayItems.forEach((t) => box.append(miniRow(t)));
   if (!todayItems.length) box.append(el("div", "empty", "Nothing scheduled today."));
@@ -429,6 +534,7 @@ function renderSkinny(r) {
   cb.addEventListener("change", () => { state.showDone = cb.checked; render(); });
   sd.append(cb, " Show done items");
   r.append(sd);
+  if (state.meetingsSync) r.append(el("div", "hint", `Outlook meetings checked ${new Date(state.meetingsSync).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} · every 15 min`));
 }
 
 function panelHeader(r, title, sub) {
@@ -444,6 +550,7 @@ function renderDayPanel(r) {
   const d = state.selected;
   const items = tasksOn(d);
   panelHeader(r, fmtLong(d), `${items.length} item${items.length === 1 ? "" : "s"}`);
+  if (showMeetings()) { r.append(loadLine(d)); meetingsSection(r, d); if (meetingsOn(d).length) r.append(el("h3", "", "Tasks")); }
   if (!items.length) r.append(el("div", "empty", "Nothing here yet. Quick add puts new things on this day."));
   items.forEach((t) => r.append(itemCard(t)));
   // coming up (next 5 days)

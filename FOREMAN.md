@@ -11,7 +11,8 @@ Supabase table `fm_rules`, not here.
 | App | Month/Week/Day, Work/Home/Both, rail, Quick add, Tell Foreman, Tomorrow | `index.html`, `css/app.css`, `js/app.js` → GitHub Pages |
 | Brain | Instant filing and reshuffle from the mic | Supabase edge function `foreman-brain` (`supabase/functions/foreman-brain`) |
 | Scheduled runs | Morning plan, end of day | Claude scheduled tasks (read `fm_rules` for the rulebook) |
-| Data | Tasks, jobs, moves, brain log, rules | Supabase tables `fm_tasks`, `fm_jobs`, `fm_moves`, `fm_brain_log`, `fm_rules` (RLS, owner only) |
+| Meetings | Reads the owner's published work calendar (ICS) every 15 min; writes titles + times only | Supabase edge function `foreman-meetings` + pg_cron job `foreman-meetings-sync` |
+| Data | Tasks, jobs, moves, brain log, rules, meetings | Supabase tables `fm_tasks`, `fm_jobs`, `fm_moves`, `fm_brain_log`, `fm_rules`, `fm_meetings`, `fm_meeting_rules` (RLS, owner only); `fm_settings` (service role only: calendar link, cron key) |
 
 The Supabase URL and publishable key in `js/config.js` are public by design; Row Level
 Security plus the owner-only login protect the data. No secrets live in this repo.
@@ -46,6 +47,15 @@ add/move/update/complete/delete, before, after, reason) so the app's Undo works.
 7. Home calendar: same filing, lighter touch.
 8. Done is done; delete only when told or for an exact duplicate.
 
+## Meetings (fm_meetings)
+- Source: the owner's published Outlook calendar (ICS). The link is stored in `fm_settings`, never in this repo.
+- `foreman-meetings` expands recurrences (ical.js, the feed's own VTIMEZONEs), keeps 14 days back / 90 ahead,
+  upserts by `source + uid|start`, and deletes rows in the window that left the feed. Titles and times only.
+- `attending` comes from `fm_meeting_rules` (title contains). The app's "I go to this" / "I don't go" buttons
+  write that rule for the whole series.
+- App: ■ solid = you go (counts against the 8 h day) · ◌ dashed = invited (not counted) · ◇ = all day / holiday.
+  Month cells show `hours/8` (work tasks + meetings you attend); `!!` when over 8 h. Work view only.
+
 ## Brain tools
 `list_jobs`, `list_tasks`, `day_load`, `add_task`, `update_task` (moves need a reason;
 refuses promised items and past-drop-dead), `complete_task`, `delete_task`, `ask_adam`
@@ -59,6 +69,6 @@ refuses promised items and past-drop-dead), `complete_task`, `delete_task`, `ask
 ## Stages
 1. Calendar, rail, quick add + mic, Tomorrow, brain, undo — done
 2. Scheduled runs (morning, end of day) — done
-3. Google Calendar sync (dated tasks → events with alerts; meetings as busy blocks)
+3. Meetings on the calendar — done (Outlook feed direct, every 15 min). Still to do: dated tasks → Google Calendar alerts
 4. Jobs tab with timeline bars; Gmail asks → unscheduled; hourly nudge
 5. Phone-first polish
