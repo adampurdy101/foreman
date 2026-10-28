@@ -66,6 +66,9 @@ refuses promised items and past-drop-dead), `complete_task`, `delete_task`, `ask
 `!!` or "urgent" · `!` or "high" · "low" · `#home` / `#work` · `@<job prefix>` ·
 "today" / "tomorrow" / "fri" / "10/30". Example: `Send James layout fri !! @miner`
 
+## Shipping a change
+Bump `?v=N` on `css/app.css` and `js/app.js` in `index.html` and `VERSION` in `sw.js` together. GitHub Pages caches files for 10 minutes; the query string makes the browser fetch the new copy right away.
+
 ## Stages
 1. Calendar, rail, quick add + mic, Tomorrow, brain, undo — done
 2. Scheduled runs (morning, end of day) — done
