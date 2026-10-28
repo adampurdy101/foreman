@@ -88,11 +88,41 @@ async function deleteTask(id) {
 }
 
 // realtime: if Claude (or another window) changes a task, this window follows
-function subscribe() {
-  db.channel("fm_tasks_live")
-    .on("postgres_changes", { event: "*", schema: "public", table: "fm_tasks" }, () => loadAll())
-    .subscribe();
+let liveChannel = null;
+let refreshQueued = false;
+let lastRefresh = 0;
+
+// don't redraw under Adam's fingers: skip while he is editing or typing
+function userIsTyping() {
+  if (state.editId != null) return true;
+  const a = document.activeElement;
+  return !!a && (a.tagName === "TEXTAREA" || (a.tagName === "INPUT" && a.type !== "checkbox" && a.value));
 }
+
+async function refresh() {
+  if (document.hidden) return;
+  if (userIsTyping()) { refreshQueued = true; return; }
+  refreshQueued = false;
+  lastRefresh = Date.now();
+  await loadAll();
+}
+
+function subscribe() {
+  if (liveChannel) { try { db.removeChannel(liveChannel); } catch (e) {} }
+  liveChannel = db.channel("fm_tasks_live_" + Date.now())
+    .on("postgres_changes", { event: "*", schema: "public", table: "fm_tasks" }, () => refresh())
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") refresh();
+      if (status === "CLOSED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") setTimeout(subscribe, 3000);
+    });
+}
+
+// belt and braces: catch up when the tab wakes, the network returns, and every 30 s
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+window.addEventListener("focus", () => refresh());
+window.addEventListener("online", () => { subscribe(); refresh(); });
+setInterval(() => { if (!document.hidden && (Date.now() - lastRefresh) > 25000) refresh(); }, 30000);
+setInterval(() => { if (refreshQueued && !userIsTyping()) refresh(); }, 2000);
 
 // ---------- derived ----------
 const inBucket = (t) => state.bucket === "both" || t.bucket === state.bucket;
