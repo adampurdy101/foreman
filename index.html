@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#ffffff">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/app.css?v=8">
+  <link rel="stylesheet" href="css/app.css?v=9">
 </head>
 <body>
 
@@ -48,6 +48,9 @@
       </form>
 
       <button id="tomorrow-btn" class="btn">Tomorrow</button>
+      <button id="mini-btn" class="btn ghost" title="Small always-on-top window with today's list">▣ Mini</button>
+      <button id="alerts-btn" class="btn ghost" title="Desktop pop-ups for meetings and nags">Alerts: off</button>
+      <button id="install-btn" class="btn hidden" title="Run Foreman in its own window">⬇ Install app</button>
       <button id="full-btn" class="btn ghost" title="Full screen">⛶ Full screen</button>
       <button id="logout-btn" class="btn ghost" title="Sign out">Sign out</button>
     </header>
@@ -77,9 +80,10 @@
       </aside>
     </main>
 
+    <div id="mini-root" class="miniwin hidden"></div>
     <div id="toast" class="toast hidden"></div>
   </div>
 
-  <script type="module" src="js/app.js?v=8"></script>
+  <script type="module" src="js/app.js?v=9"></script>
 </body>
 </html>

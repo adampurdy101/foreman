@@ -239,9 +239,12 @@ function render() {
   }
   clearTimeout(M.pending); M.pending = null;
   renderTop();
+  if (MINI_ONLY) { renderMini($("mini-root")); updateBadge(); return; }
   renderCalendar();
   renderRail();
   $("layout").classList.toggle("wide", !!state.panel);
+  renderMini();
+  updateBadge();
 }
 
 function renderTop() {
@@ -911,6 +914,141 @@ function initFullscreen() {
   sync();
 }
 
+
+// ============================================================
+//  APP MODE — own window, badge, pop-up alerts, mini mode
+// ============================================================
+const MINI_ONLY = new URLSearchParams(location.search).get("mini") === "1";
+if (MINI_ONLY) document.body.classList.add("mini-only");
+
+// ---- install (own window) ----
+let installEvt = null;
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; $("install-btn").classList.remove("hidden"); });
+window.addEventListener("appinstalled", () => { installEvt = null; $("install-btn").classList.add("hidden"); toast("Installed — open Foreman from your Start menu or taskbar"); });
+function initInstall() {
+  $("install-btn").addEventListener("click", async () => {
+    if (!installEvt) return;
+    installEvt.prompt(); await installEvt.userChoice.catch(() => {});
+  });
+}
+
+// ---- badge: urgent not done + overdue drop-deads ----
+function badgeCount() {
+  const today = todayISO();
+  return state.tasks.filter((t) => t.status !== "done" && (
+    (t.priority === "urgent" && (!t.scheduled_date || t.scheduled_date <= today)) ||
+    (t.dropdead_date && t.dropdead_date <= today))).length;
+}
+function updateBadge() {
+  if (!("setAppBadge" in navigator)) return;
+  const n = badgeCount();
+  (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {});
+}
+
+// ---- pop-up alerts (while a Foreman window is open, even minimized) ----
+const alertsOn = () => ("Notification" in window) && Notification.permission === "granted" && localStorage.getItem("fm.alerts") !== "off";
+function syncAlertsBtn() {
+  const b = $("alerts-btn"); if (!b) return;
+  if (!("Notification" in window)) { b.textContent = "Alerts: n/a"; b.disabled = true; return; }
+  b.textContent = alertsOn() ? "Alerts: on" : (Notification.permission === "denied" ? "Alerts: blocked" : "Alerts: off");
+}
+async function notify(title, body, tag) {
+  if (!alertsOn()) return;
+  const opts = { body, tag, icon: "icons/icon.svg", badge: "icons/icon.svg", renotify: false, silent: false };
+  try { const reg = await navigator.serviceWorker.ready; await reg.showNotification(title, opts); }
+  catch { try { new Notification(title, opts); } catch {} }
+}
+const firedKey = () => "fm.fired." + todayISO();
+const fired = () => { try { return new Set(JSON.parse(localStorage.getItem(firedKey()) || "[]")); } catch { return new Set(); } };
+function markFired(k) { const s = fired(); s.add(k); localStorage.setItem(firedKey(), JSON.stringify([...s])); }
+function alertTick() {
+  if (!alertsOn() || MINI_ONLY) return;
+  const now = Date.now(), today = todayISO(), done = fired();
+  const once = (k, fn) => { if (!done.has(k)) { markFired(k); fn(); } };
+  // meetings you go to: 15-min heads-up, then at start
+  state.meetings.filter((m) => m.day === today && m.attending && !m.all_day).forEach((m) => {
+    const mins = (new Date(m.start_at) - now) / 60000;
+    if (mins <= 15 && mins > 10) once("m15:" + m.id, () => notify("In 15 min — " + m.title, fmtTime(m.start_at) + " · " + fmtTime(m.end_at), "mtg-" + m.id));
+    if (mins <= 0 && mins > -3) once("m0:" + m.id, () => notify("Now — " + m.title, "until " + fmtTime(m.end_at), "mtg-" + m.id));
+  });
+  const h = new Date().getHours(), mn = new Date().getMinutes();
+  // 7:00 — anything with a drop-dead today
+  const dd = state.tasks.filter((t) => t.status !== "done" && t.dropdead_date === today);
+  if (h >= 7 && dd.length) once("dd:" + today, () => notify(`Drop-dead today: ${dd.length}`, dd.map((t) => "• " + t.title).join("\n"), "dd"));
+  // nags: every nag_hours from 7 a.m. until done, work hours only
+  if (h >= 7 && h < 16) state.tasks.filter((t) => t.status !== "done" && t.nag_hours > 0 && t.scheduled_date && t.scheduled_date <= today).forEach((t) => {
+    const slot = Math.floor((h - 7 + mn / 60) / t.nag_hours);
+    once(`nag:${t.id}:${slot}`, () => notify(PRI[t.priority].mark + " " + t.title, (t.nag_hours === 24 ? "Daily reminder" : `Nag every ${t.nag_hours} h`) + (t.promised_to ? " · promised to " + t.promised_to : ""), "nag-" + t.id));
+  });
+}
+function initAlerts() {
+  const b = $("alerts-btn"); if (!b) return;
+  syncAlertsBtn();
+  b.addEventListener("click", async () => {
+    if (!("Notification" in window)) return;
+    if (Notification.permission === "denied") { toast("Blocked in the browser — click the lock icon by the address bar → Notifications → Allow"); return; }
+    if (Notification.permission !== "granted") {
+      const r = await Notification.requestPermission();
+      if (r !== "granted") { syncAlertsBtn(); return; }
+      localStorage.setItem("fm.alerts", "on"); syncAlertsBtn(); notify("Foreman alerts are on", "Meetings 15 min ahead, nags, drop-deads.", "hello"); return;
+    }
+    localStorage.setItem("fm.alerts", alertsOn() ? "off" : "on"); syncAlertsBtn();
+    toast(alertsOn() ? "Alerts on" : "Alerts off");
+  });
+  setInterval(alertTick, 60 * 1000);
+  setTimeout(alertTick, 4000);
+}
+
+// ---- mini mode: small always-on-top "today" window ----
+let miniWin = null;
+function renderMini(root) {
+  const host = root || (miniWin && miniWin.document.getElementById("mini-root"));
+  if (!host) return;
+  const today = todayISO();
+  const items = state.tasks.filter((t) => t.scheduled_date === today && (t.status !== "done" || state.showDone)).sort(byPriority);
+  const open = items.filter((t) => t.status !== "done");
+  const L = dayLoad(today);
+  host.innerHTML = "";
+  host.classList.remove("hidden");
+  const h4 = el("h4"); h4.append(el("span", "", "Today"), el("small", "", `${fmtShort(today)} · ${open.length} left · ${fmtHrs(L.total)}/8`));
+  host.append(h4);
+  const now = Date.now();
+  const mtgs = timedOn(today).filter((m) => m.attending && new Date(m.end_at) > now);
+  mtgs.slice(0, 3).forEach((m, i) => {
+    const n = el("div", "mtg going" + (i === 0 ? " next" : ""), `■ ${fmtTime(m.start_at)} ${m.title}`);
+    host.append(n);
+  });
+  if (!items.length) host.append(el("div", "empty", "Nothing on today."));
+  items.forEach((t) => {
+    const r = el("div", `mrow p-${t.priority}` + (t.status === "done" ? " done" : ""));
+    r.append(el("span", "", PRI[t.priority].mark), el("span", "t", t.title), el("span", "sz", SIZE[t.size] || ""));
+    const b = el("button", "", t.status === "done" ? "Reopen" : "✓ Done");
+    b.addEventListener("click", () => saveTask(t.id, t.status === "done" ? { status: "not_started", done_at: null } : { status: "done", done_at: new Date().toISOString() }));
+    r.append(b);
+    host.append(r);
+  });
+  const tmr = state.tasks.filter((t) => t.scheduled_date === iso(addDays(new Date(), 1)) && t.status !== "done").length;
+  const foot = el("div", "foot"); foot.append(el("span", "", `Tomorrow: ${tmr} item${tmr === 1 ? "" : "s"}`), el("span", "", `Urgent/overdue: ${badgeCount()}`));
+  host.append(foot);
+}
+async function openMini() {
+  if (miniWin && !miniWin.closed) { try { miniWin.focus(); } catch {} return; }
+  if ("documentPictureInPicture" in window) {
+    try {
+      miniWin = await documentPictureInPicture.requestWindow({ width: 360, height: 460 });
+      [...document.styleSheets].forEach((ss) => { try { const l = miniWin.document.createElement("link"); l.rel = "stylesheet"; l.href = ss.href; if (ss.href) miniWin.document.head.append(l); } catch {} });
+      const root = miniWin.document.createElement("div"); root.id = "mini-root"; root.className = "miniwin";
+      miniWin.document.body.style.margin = "0"; miniWin.document.body.append(root);
+      miniWin.addEventListener("pagehide", () => { miniWin = null; });
+      renderMini(root);
+      return;
+    } catch { miniWin = null; }
+  }
+  // Fallback: a small popup running Foreman in mini-only mode (not always-on-top)
+  miniWin = window.open(location.pathname + "?mini=1", "fm-mini", "popup,width=360,height=460");
+}
+function initMini() { const b = $("mini-btn"); if (b) b.addEventListener("click", openMini); }
+
 // ---------- nav ----------
 function shift(n) {
   const c = state.cursor;
@@ -938,6 +1076,9 @@ function wire() {
   });
   initMic();
   initFullscreen();
+  initInstall();
+  initAlerts();
+  initMini();
 }
 
 // ---------- boot ----------

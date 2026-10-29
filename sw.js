@@ -1,5 +1,5 @@
 // Foreman service worker — network-first for app files, so updates land fast.
-const VERSION = "fm-v8";
+const VERSION = "fm-v9";
 const SHELL = ["./", "./index.html", "./css/app.css", "./js/app.js", "./js/auth.js", "./js/config.js", "./js/supabase.js", "./manifest.webmanifest", "./icons/icon.svg"];
 
 self.addEventListener("install", (e) => {
@@ -15,4 +15,12 @@ self.addEventListener("fetch", (e) => {
     fetch(e.request).then((res) => { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(e.request, copy)); return res; })
       .catch(() => caches.match(e.request))
   );
+});
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+    const main = list.find((c) => !c.url.includes("mini=1")) || list[0];
+    if (main) return main.focus();
+    return self.clients.openWindow("./");
+  }));
 });
