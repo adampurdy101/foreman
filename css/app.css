@@ -1,6 +1,6 @@
 /* Foreman — light, flat, calm. Dark text on light background, always. */
 :root {
-  --bg: #eef0ee;
+  --bg: #f1e9d8;
   --card: #ffffff;
   --ink: #1f1f1d;
   --ink-2: #5f5e5a;
@@ -67,7 +67,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .cal-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .rail { background: var(--card); border-left: 1px solid var(--line); padding: 12px 14px; overflow: auto; }
 
-.cal-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; background: #e3e6e3; border-radius: 8px; padding: 8px 12px; }
+.cal-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; background: #e6d9bf; border-radius: 8px; padding: 8px 12px; }
 .cal-head h2 { font-size: 30px; font-weight: 700; letter-spacing: -.01em; min-width: 250px; color: var(--ink); }
 .legend { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; font-size: 12px; }
 
@@ -84,9 +84,9 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 
 /* ---------- month grid ---------- */
 .month { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: auto repeat(var(--rows, 5), minmax(96px, 1fr)); gap: 4px; }
-.dow { text-align: center; color: var(--ink); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; padding: 6px 0; border-bottom: 2px solid var(--ink-2); }
+.dow { text-align: center; color: var(--ink); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; padding: 6px 0; border-bottom: 2px solid #8a6a40; }
 .day { position: relative; min-height: 96px; overflow: hidden; background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 4px 5px; display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
-.day.other { background: #fdf0e3; border-color: #f2dcc5; color: var(--ink-3); }
+.day.other { background: #f8efdf; border-color: #e8d9bf; color: var(--ink-3); }
 .day.other .num { font-weight: 400; font-size: 12px; }
 .day.weekend { background: #fbe3cc; border-color: #f0c9a3; }
 .day.weekend .num { color: var(--ink-2); }
@@ -261,11 +261,11 @@ body.mini-only #mini-root { display: block; }
 .ver { margin-left: auto; font-size: 11px; color: var(--ink-3); letter-spacing: .04em; }
 
 /* ---------- calendar head: arrows + today ---------- */
-#prev-btn, #next-btn { width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #b9bdb9; background: #fff; border-radius: 6px; color: var(--ink); }
+#prev-btn, #next-btn { width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #b08a5a; background: #fff; border-radius: 6px; color: var(--ink); }
 #prev-btn:hover, #next-btn:hover { background: #fff; border-color: var(--ink); }
 #prev-btn svg, #next-btn svg { width: 18px; height: 18px; }
-#today-btn { background: #3a3d3a; color: #fff; border: 1px solid #3a3d3a; font-weight: 600; padding: 8px 18px; border-radius: 6px; letter-spacing: .02em; }
-#today-btn::before { content: "● "; color: #f58220; }
-#today-btn:hover { background: #1f211f; border-color: #1f211f; }
+#today-btn { background: #fff7ea; color: var(--ink); border: 2px solid #b8521e; font-weight: 700; padding: 7px 18px; border-radius: 6px; letter-spacing: .02em; }
+#today-btn::before { content: none; }
+#today-btn:hover { background: #fbe3cc; }
 .mhead { background: var(--bg); padding-bottom: 4px; }
-.mhead .dow.td { color: var(--accent); border-bottom-color: var(--accent); }
+.mhead .dow.td { color: #b8521e; border-bottom-color: #b8521e; }
