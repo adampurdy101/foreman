@@ -1,5 +1,5 @@
 // Foreman service worker — network-first for app files, so updates land fast.
-const VERSION = "fm-v19";
+const VERSION = "fm-v20";
 const SHELL = ["./", "./index.html", "./css/app.css", "./js/app.js", "./js/auth.js", "./js/config.js", "./js/supabase.js", "./manifest.webmanifest", "./icons/icon.svg"];
 
 self.addEventListener("install", (e) => {
