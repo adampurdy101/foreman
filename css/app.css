@@ -1,6 +1,6 @@
 /* Foreman — light, flat, calm. Dark text on light background, always. */
 :root {
-  --bg: #f2f2f2;
+  --bg: #f3f1ea;
   --card: #ffffff;
   --ink: #1f1f1d;
   --ink-2: #5f5e5a;
@@ -86,14 +86,14 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .month { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: auto repeat(var(--rows, 5), minmax(96px, 1fr)); gap: 4px; }
 .dow { text-align: center; color: var(--ink-3); font-size: 12px; padding: 2px 0; }
 .day { position: relative; min-height: 96px; overflow: hidden; background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 4px 5px; display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
-.day.other { background: transparent; color: var(--ink-3); }
+.day.other { background: #eee9dc; border-color: #ddd6c4; color: var(--ink-3); }
 .day.other .num { font-weight: 400; font-size: 12px; }
-.day.weekend { background: #e9e9e9; border-color: #d6d6d6; }
+.day.weekend { background: #e8e1cf; border-color: #d6cdb6; }
 .day.weekend .num { color: var(--ink-2); }
 .day.weekend.other { background: transparent; }
 .day.past { opacity: .55; }
 .day.past:hover { opacity: .9; }
-.day.today { border: 1px solid var(--accent); border-left: 6px solid var(--accent); background: #eef5fc; }
+.day.today { border: 3px solid var(--accent); border-left: 7px solid var(--accent); background: #ffffff; }
 .day.today .num { color: var(--accent); }
 .today-tag { font-size: 10px; letter-spacing: .06em; margin-left: 5px; font-weight: 700; }
 .meter { height: 5px; border-radius: 3px; background: #e4e4e4; overflow: hidden; flex: none; margin-bottom: 1px; }
@@ -254,3 +254,6 @@ body.mini-only #mini-root { display: block; }
 .quick input { min-width: 0; }
 .quick { flex-wrap: nowrap; }
 #tell-btn { white-space: nowrap; }
+
+.day.weekend.other { background: #e8e1cf; }
+.day.today.mstart { border-left: 7px solid var(--accent) !important; }
