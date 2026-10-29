@@ -273,21 +273,38 @@ function dayCell(d, { other = false, max = 4 } = {}) {
   const cell = el("div", "day");
   if (other) cell.classList.add("other");
   if (d.getDay() === 0 || d.getDay() === 6) cell.classList.add("weekend");
-  if (dISO === todayISO()) cell.classList.add("today");
+  const isToday = dISO === todayISO();
+  if (isToday) cell.classList.add("today");
+  else if (dISO < todayISO()) cell.classList.add("past");
   if (dISO === state.selected && state.panel === "day") cell.classList.add("selected");
 
   const items = tasksOn(dISO);
   const num = el("div", "num");
-  num.append(el("span", "", String(d.getDate())));
+  const numLabel = el("span", "", String(d.getDate()));
+  if (isToday) numLabel.append(el("b", "today-tag", "TODAY"));
+  num.append(numLabel);
   const weekday = d.getDay() !== 0 && d.getDay() !== 6;
   const L = dayLoad(dISO);
-  if (showMeetings() && weekday && !other && (L.total > 0)) {
+  let meter = null;
+  if (showMeetings() && weekday && (L.total > 0)) {
     const over = L.total > DAY_HRS;
     const ld = el("span", "count" + (over ? " over" : ""), `${over ? "!! " : ""}${fmtHrs(L.total)}/8`);
     ld.title = `Work ${fmtHrs(L.work)} + meetings you attend ${fmtHrs(L.mtg)}${over ? " — over the 8 h day" : ""}`;
     num.append(ld);
+    meter = el("div", "meter" + (over ? " over" : ""));
+    const fill = el("i"); fill.style.width = Math.min(100, Math.round(L.total / DAY_HRS * 100)) + "%";
+    meter.append(fill); meter.title = ld.title;
   } else if (items.length) num.append(el("span", "count", `${items.length}`));
   cell.append(num);
+  if (meter) cell.append(meter);
+  const due = state.tasks.filter((t) => visible(t) && t.status !== "done" && t.dropdead_date === dISO);
+  if (due.length) {
+    cell.classList.add("has-dd");
+    const tab = el("div", "dd");
+    tab.title = "Drop-dead today:\n" + due.map((t) => "• " + t.title).join("\n");
+    tab.setAttribute("aria-label", `${due.length} drop-dead due`);
+    cell.append(tab);
+  }
   const going = timedOn(dISO).filter((m) => m.attending);
   const invited = timedOn(dISO).filter((m) => !m.attending);
   allDayOn(dISO).forEach((m) => cell.append(meetingLine(m, { compact: true })));
@@ -331,6 +348,8 @@ function weekRow(start, focusKey, max) {
     const d = addDays(start, i);
     const cell = dayCell(d, { other: monthKey(d) !== focusKey, max });
     cell.dataset.month = monthKey(d);
+    if (monthKey(addDays(d, -7)) !== monthKey(d)) cell.classList.add("mtop");
+    if (iso(d) === todayISO()) row.classList.add("cur");
     if (d.getDate() === 1) {
       cell.classList.add("mstart");
       cell.querySelector(".num span").textContent = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -350,7 +369,7 @@ function renderMonth(body) {
 
   const scroller = el("div", "mscroll");
   const head = el("div", "mhead");
-  ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach((d) => head.append(el("div", "dow", d)));
+  ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach((d, i) => head.append(el("div", "dow" + (i === new Date().getDay() ? " td" : ""), d)));
   scroller.append(head);
   const frag = document.createDocumentFragment();
   for (let w = 0; w < weeks; w++) frag.append(weekRow(addDays(winStart, w * 7), focusKey, max));
@@ -928,4 +947,18 @@ document.addEventListener("app:ready", async () => {
 });
 wire();
 initAuth();
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").then((reg) => {
+    // Installed-app windows stay open for days: check for new app code on every wake and every 15 min.
+    const check = () => reg.update().catch(() => {});
+    window.addEventListener("focus", check);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) check(); });
+    setInterval(check, 15 * 60 * 1000);
+  }).catch(() => {});
+  let hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController) { hadController = true; return; }       // first install, nothing to swap
+    const go = () => { if (userIsTyping()) setTimeout(go, 3000); else location.reload(); };
+    toast("Foreman updated — refreshing"); setTimeout(go, 1200);
+  });
+}
