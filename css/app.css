@@ -1,12 +1,12 @@
 /* Foreman — light, flat, calm. Dark text on light background, always. */
 :root {
-  --bg: #f6f5f1;
+  --bg: #f2f2f2;
   --card: #ffffff;
   --ink: #1f1f1d;
   --ink-2: #5f5e5a;
   --ink-3: #8a8983;
-  --line: #e3e1da;
-  --line-2: #c9c7bf;
+  --line: #dedede;
+  --line-2: #c4c4c4;
   --accent: #185fa5;
   --accent-bg: #e6f1fb;
   --radius: 8px;
@@ -15,7 +15,7 @@
   --high-bg: #faeeda;   --high-ink: #633806;   --high-line: #ef9f27;
   --normal-bg: #e6f1fb; --normal-ink: #0c447c; --normal-line: #378add;
   --low-bg: #f1efe8;    --low-ink: #444441;    --low-line: #b4b2a9;
-  --home-bg: #eeedfe;   --home-ink: #26215c;   --home-line: #7f77dd;
+  --home-bg: #e6edf2;   --home-ink: #1f3a4d;   --home-line: #4f7a99;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
@@ -37,10 +37,10 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 
 /* ---------- buttons ---------- */
 .btn { padding: 7px 12px; border: 1px solid var(--line-2); border-radius: var(--radius); background: #fff; }
-.btn:hover { background: #f1efe8; }
+.btn:hover { background: #e9e9e9; }
 .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .btn.ghost { border-color: transparent; background: transparent; }
-.btn.ghost:hover { background: #ebe9e2; }
+.btn.ghost:hover { background: #e6e6e6; }
 .btn.sm { padding: 4px 9px; font-size: 13px; }
 .btn.danger { color: var(--urgent-ink); }
 
@@ -56,7 +56,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .quick .plus { color: var(--ink-3); font-size: 18px; }
 .quick input { flex: 1; border: 0; padding: 8px 4px; outline: none; background: transparent; }
 .mic { border: 0; background: transparent; padding: 4px 6px; border-radius: 6px; color: var(--ink-2); display: inline-flex; align-items: center; }
-.mic:hover { background: #f1efe8; color: var(--ink); }
+.mic:hover { background: #e9e9e9; color: var(--ink); }
 .mic.listening { background: var(--urgent-bg); color: var(--urgent-ink); outline: 2px solid var(--urgent-line); }
 .mic-icon { width: 20px; height: 20px; }
 
@@ -88,7 +88,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .day { position: relative; min-height: 96px; overflow: hidden; background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 4px 5px; display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
 .day.other { background: transparent; color: var(--ink-3); }
 .day.other .num { font-weight: 400; font-size: 12px; }
-.day.weekend { background: #f1efe8; border-color: #dcd9cf; }
+.day.weekend { background: #e9e9e9; border-color: #d6d6d6; }
 .day.weekend .num { color: var(--ink-2); }
 .day.weekend.other { background: transparent; }
 .day.past { opacity: .55; }
@@ -96,7 +96,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .day.today { border: 1px solid var(--accent); border-left: 6px solid var(--accent); background: #eef5fc; }
 .day.today .num { color: var(--accent); }
 .today-tag { font-size: 10px; letter-spacing: .06em; margin-left: 5px; font-weight: 700; }
-.meter { height: 5px; border-radius: 3px; background: #e8e6df; overflow: hidden; flex: none; margin-bottom: 1px; }
+.meter { height: 5px; border-radius: 3px; background: #e4e4e4; overflow: hidden; flex: none; margin-bottom: 1px; }
 .meter i { display: block; height: 100%; background: var(--normal-line); }
 .meter.over i { background: var(--urgent-line); }
 .dd { position: absolute; top: 0; right: 0; width: 0; height: 0; border-style: solid; border-width: 0 22px 22px 0; border-color: transparent var(--urgent-line) transparent transparent; }
@@ -206,7 +206,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 /* ---------- meetings (PCI Outlook) — shape + wording, not color alone ---------- */
 /* ■ solid = you go, counts on your day · ◌ dashed = invited, not counted · ◇ = holiday / all day */
 .mtg { font-size: 12px; line-height: 1.45; padding: 0 6px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
-.mtg.going { background: #e9e8e3; border: 1px solid var(--ink-2); font-weight: 600; }
+.mtg.going { background: #e6e6e6; border: 1px solid var(--ink-2); font-weight: 600; }
 .mtg.invited { background: transparent; border: 1px dashed var(--line-2); color: var(--ink-2); }
 .mtg.allday { background: transparent; border: 1px solid var(--line); color: var(--ink-3); font-style: italic; }
 .mtgs { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
@@ -249,7 +249,7 @@ body.mini-only #mini-root { display: block; }
 /* ---------- Today button — pronounced, easy to grab ---------- */
 #today-btn { border: 1.5px solid var(--ink-2); background: #fff; color: var(--ink); font-weight: 600; padding: 7px 16px; border-radius: 6px; letter-spacing: .02em; }
 #today-btn::before { content: "◉ "; color: var(--accent); }
-#today-btn:hover { background: #ebe9e2; border-color: var(--ink); }
+#today-btn:hover { background: #e6e6e6; border-color: var(--ink); }
 
 .quick input { min-width: 0; }
 .quick { flex-wrap: nowrap; }
