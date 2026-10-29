@@ -278,7 +278,7 @@ function dayCell(d, { other = false, max = 4 } = {}) {
   if (d.getDay() === 0 || d.getDay() === 6) cell.classList.add("weekend");
   const isToday = dISO === todayISO();
   if (isToday) cell.classList.add("today");
-  else if (dISO < todayISO()) cell.classList.add("past");
+  else if (dISO < todayISO()) { cell.classList.add("past"); cell.append(el("span", "stamp", "DONE")); }
   if (dISO === state.selected && state.panel === "day") cell.classList.add("selected");
 
   const items = tasksOn(dISO);

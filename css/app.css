@@ -272,3 +272,10 @@ body.mini-only #mini-root { display: block; }
 #today-btn:hover { background: #fbe3cc; }
 .mhead { background: var(--bg); padding-bottom: 4px; }
 .mhead .dow.td { color: #b8521e; border-bottom-color: #b8521e; }
+
+/* ---------- past days: faint red X + DONE stamp ---------- */
+.day.past::before, .day.past::after { content: ""; position: absolute; left: -10%; top: 50%; width: 120%; height: 2px; background: #c0392b; opacity: .35; transform: rotate(28deg); pointer-events: none; z-index: 1; }
+.day.past::after { transform: rotate(-28deg); }
+.day.past .stamp { position: absolute; right: 6px; bottom: 4px; font-size: 10px; letter-spacing: .14em; color: #9a9a9a; font-weight: 700; border: 1.5px solid #b3b3b3; border-radius: 3px; padding: 0 4px; transform: rotate(-8deg); background: rgba(255,255,255,.7); z-index: 2; pointer-events: none; }
+.day.past > * { position: relative; z-index: 2; }
+.day.past .dd { z-index: 3; }
