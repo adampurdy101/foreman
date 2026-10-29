@@ -262,3 +262,81 @@ body[data-line="orange"]  { --step: #b8521e; }
 body[data-line="orange2"] { --step: #b8521e; --step-w: 4px; }
 body[data-line="orange2"] .day.mstart .num > span:first-child { color: #b8521e; font-weight: 700; }
 body[data-line="orange2"] .day.mtop .num, body[data-line="orange2"] .day.mstart .num { color: inherit; }
+
+/* ---------- Today button — pronounced, easy to grab ---------- */
+#today-btn { border: 1.5px solid var(--ink-2); background: #fff; color: var(--ink); font-weight: 600; padding: 7px 16px; border-radius: 6px; letter-spacing: .02em; }
+#today-btn::before { content: "◉ "; color: var(--accent); }
+#today-btn:hover { background: var(--hover); border-color: var(--ink); }
+body[data-look] #today-btn { border-color: var(--lk-ink); color: var(--lk-ink); background: transparent; border-radius: 0; text-transform: uppercase; letter-spacing: .12em; font-size: 12px; padding: 8px 16px; }
+body[data-look] #today-btn::before { color: var(--lk-accent); }
+
+/* ============================================================
+   TEMP LOOK PICKER — Dwell-style looks (walnut / concrete / steel)
+   Hairline grid, light big title, small-caps labels, solid today mark.
+   ============================================================ */
+body[data-look="walnut"]   { --lk-bg:#f7f4ee; --lk-cell:#f7f4ee; --lk-topbg:#f7f4ee; --lk-topink:#2b2622; --lk-topmute:#8d8378; --lk-ink:#2b2622; --lk-ink2:#5c5047; --lk-mute:#978b7f; --lk-rule:#dfd6c8; --lk-wknd:#efe9de; --lk-other:#f2eee6; --lk-accent:#b8521e; --lk-step:#5c4634; --lk-mtg:#e7dfd1; --lk-todaybg:#fbf9f5; --lk-today:#5c4634; --lk-todayink:#fff; }
+body[data-look="concrete"] { --lk-bg:#f1f0ed; --lk-cell:#ffffff; --lk-topbg:#ffffff; --lk-topink:#262523; --lk-topmute:#8c8a85; --lk-ink:#262523; --lk-ink2:#5a5752; --lk-mute:#9a978f; --lk-rule:#dcd9d2; --lk-wknd:#f4f2ee; --lk-other:#f1f0ed; --lk-accent:#b8521e; --lk-step:#b8521e; --lk-mtg:#e9e6df; --lk-todaybg:#ffffff; --lk-today:#b8521e; --lk-todayink:#fff; }
+body[data-look="steel"]    { --lk-bg:#f5f3ef; --lk-cell:#f5f3ef; --lk-topbg:#2a2826; --lk-topink:#f1ede6; --lk-topmute:#a39d93; --lk-ink:#2a2826; --lk-ink2:#58534c; --lk-mute:#948d83; --lk-rule:#d8d2c6; --lk-wknd:#ebe6dc; --lk-other:#efebe3; --lk-accent:#b8521e; --lk-step:#2a2826; --lk-mtg:#e3ddd1; --lk-todaybg:#fbfaf7; --lk-today:#2a2826; --lk-todayink:#fff; }
+
+body[data-look] { --bg: var(--lk-bg); --card: var(--lk-cell); --ink: var(--lk-ink); --ink-2: var(--lk-ink2); --ink-3: var(--lk-mute); --line: var(--lk-rule); --line-2: var(--lk-rule); --accent: var(--lk-accent); --accent-bg: var(--lk-wknd); --hover: var(--lk-wknd); --step: var(--lk-step); --step-w: 2px;
+  --high-line: var(--lk-accent); --high-ink: var(--lk-ink); --normal-line: transparent; --low-line: transparent; --urgent-bg: transparent; --high-bg: transparent; --normal-bg: transparent; --low-bg: transparent; }
+body[data-look] .app { background: var(--lk-bg); }
+/* top bar */
+body[data-look] .topbar { background: var(--lk-topbg); color: var(--lk-topink); border-bottom: 1px solid var(--lk-rule); padding: 10px 22px; gap: 18px; }
+body[data-look] .brand { letter-spacing: .14em; text-transform: uppercase; font-size: 16px; }
+body[data-look] .seg { border: 0; background: transparent; gap: 14px; }
+body[data-look] .seg button { padding: 4px 0; border: 0 !important; background: transparent; text-transform: uppercase; letter-spacing: .1em; font-size: 12px; color: var(--lk-topmute); border-bottom: 2px solid transparent !important; }
+body[data-look] .seg button.on { color: var(--lk-topink); border-bottom-color: var(--lk-accent) !important; font-weight: 600; }
+body[data-look] .quick { border: 0; border-bottom: 1px solid var(--lk-rule); border-radius: 0; background: transparent; color: var(--lk-topink); }
+body[data-look] .quick input { color: var(--lk-topink); } body[data-look] .quick input::placeholder { color: var(--lk-topmute); }
+body[data-look] .topbar .btn, body[data-look] .topbar select { border: 1px solid var(--lk-rule); background: transparent; color: var(--lk-topink); border-radius: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+body[data-look] .topbar .btn.ghost { border-color: transparent; }
+body[data-look] .mic { color: var(--lk-topink); }
+/* calendar head */
+body[data-look] .cal { padding: 14px 24px 0; }
+body[data-look] .cal-head h2 { font-size: 30px; font-weight: 300; letter-spacing: -.01em; min-width: 230px; }
+body[data-look] .cal-head .btn.ghost { color: var(--lk-mute); font-size: 18px; }
+body[data-look] .legend .chip, body[data-look] .legend .mtg { border: 0 !important; background: transparent !important; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--lk-mute); font-weight: 400; padding: 0; }
+body[data-look] .legend .chip.p-urgent { color: var(--lk-mute); }
+/* grid: hairlines, no boxes */
+body[data-look] .mhead { background: var(--lk-bg); gap: 0; padding-bottom: 0; }
+body[data-look] .mhead .dow { text-align: left; padding: 6px 10px; letter-spacing: .14em; text-transform: uppercase; font-size: 11px; color: var(--lk-mute); border-bottom: 1px solid var(--lk-ink); }
+body[data-look] .mhead .dow.td { color: var(--lk-ink); font-weight: 600; }
+body[data-look] .mweek { gap: 0; margin-bottom: 0; }
+body[data-look] .day { border: 0; border-right: 1px solid var(--lk-rule); border-bottom: 1px solid var(--lk-rule); border-radius: 0; background: var(--lk-cell); padding: 7px 10px; }
+body[data-look] .mweek .day:last-child { border-right: 0; }
+body[data-look] .day .num { font-size: 15px; font-weight: 500; }
+body[data-look] .day .num .count { letter-spacing: .04em; }
+body[data-look] .day.weekend { background: var(--lk-wknd); } body[data-look] .day.weekend .num { color: var(--lk-mute); }
+body[data-look] .day.other { background: var(--lk-other); color: var(--lk-mute); } body[data-look] .day.other .num { font-weight: 400; font-size: 14px; }
+body[data-look] .day.weekend.other { background: var(--lk-other); }
+body[data-look] .day.today { border: 0; border-right: 1px solid var(--lk-rule); border-bottom: 1px solid var(--lk-rule); background: var(--lk-todaybg); }
+body[data-look] .day.today .num > span:first-child { background: var(--lk-today); color: var(--lk-todayink); border-radius: 0; padding: 1px 8px; margin-left: -4px; font-weight: 600; }
+body[data-look] .day.today .today-tag { letter-spacing: .14em; }
+body[data-look] .mweek.cur { outline: 0; }
+body[data-look] .day.mstart .num > span:first-child { color: var(--lk-step); letter-spacing: .08em; font-size: 12px; font-weight: 600; }
+body[data-look] .day.today.mstart { border-left: var(--step-w) solid var(--lk-step) !important; }
+/* items: text lines, mark carries priority */
+body[data-look] .chip { border: 0; background: transparent; padding: 0 2px; font-size: 12.5px; color: var(--lk-ink); border-radius: 0; }
+body[data-look] .chip.p-urgent { color: #800000; font-weight: 600; }
+body[data-look] .chip.p-high { font-weight: 600; }
+body[data-look] .chip.p-low { color: var(--lk-mute); }
+body[data-look] .chip.planned { border-left: 2px dashed var(--lk-mute); padding-left: 5px; color: var(--lk-mute); }
+body[data-look] .chip.bucket-home { border: 0; border-left: 2px solid var(--lk-ink2); padding-left: 5px; color: var(--lk-ink2); }
+body[data-look] .mtg.going { background: var(--lk-mtg); border: 0; border-radius: 2px; font-weight: 400; }
+body[data-look] .mtg.invited { border: 1px dashed var(--lk-rule); }
+body[data-look] .meter { height: 2px; background: var(--lk-rule); border-radius: 0; margin: 2px 0 3px; }
+body[data-look] .meter i { background: var(--lk-ink2); }
+body[data-look] .dd { border-width: 0 16px 16px 0; }
+body[data-look] .dd::after { display: none; }
+/* rail + panels */
+body[data-look] .rail { background: var(--lk-cell); border-left: 1px solid var(--lk-rule); }
+body[data-look] .rail h3 { text-transform: uppercase; letter-spacing: .1em; font-size: 13px; }
+body[data-look] .mini .row, body[data-look] .item { border-radius: 0; background: transparent; border-color: var(--lk-rule); }
+body[data-look] .mini .row.p-urgent { border-left-color: #800000; color: #800000; }
+body[data-look] .btn.primary { background: var(--lk-ink); border-color: var(--lk-ink); border-radius: 0; }
+
+body[data-look] .topbar .btn, body[data-look] .topbar select { white-space: nowrap; width: auto; max-width: 170px; padding: 6px 10px; font-size: 11px; letter-spacing: .06em; }
+body[data-look] .quick { min-width: 220px; flex: 1 1 260px; }
+body[data-look] .quick .btn.sm { padding: 3px 8px; }
+#tell-btn { white-space: nowrap; }
