@@ -307,21 +307,92 @@ function dayCell(d, { other = false, max = 4 } = {}) {
   return cell;
 }
 
+// Month view = one continuous run of weeks. Scroll wheel slides partway into
+// next / prior months; the title follows whichever month fills the screen.
+const firstOfMonth = (d) => new Date(d.getFullYear(), d.getMonth(), 1);
+const monthRows = (m) => Math.ceil((m.getDay() + new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate()) / 7);
+const sameMonth = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+
 function renderMonth(body) {
-  const c = state.cursor;
-  $("cal-title").textContent = c.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  const grid = el("div", "month");
-  ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach((d) => grid.append(el("div", "dow", d)));
-  const first = new Date(c.getFullYear(), c.getMonth(), 1);
-  const start = addDays(first, -first.getDay());
-  const lastDay = new Date(c.getFullYear(), c.getMonth() + 1, 0).getDate();
-  const rows = Math.ceil((first.getDay() + lastDay) / 7);
-  grid.style.setProperty("--rows", rows);
-  for (let i = 0; i < rows * 7; i++) {
-    const d = addDays(start, i);
-    grid.append(dayCell(d, { other: d.getMonth() !== c.getMonth(), max: rows >= 6 ? 3 : 4 }));
+  const focus = firstOfMonth(state.cursor);
+  if (!state.mAnchor || Math.abs((focus.getFullYear() - state.mAnchor.getFullYear()) * 12 + focus.getMonth() - state.mAnchor.getMonth()) > 2) state.mAnchor = focus;
+  const a = state.mAnchor;
+  const winStart = weekStart(new Date(a.getFullYear(), a.getMonth() - 4, 1));
+  const winEnd = new Date(a.getFullYear(), a.getMonth() + 5, 0);
+  const weeks = Math.ceil((daysBetween(iso(winStart), iso(winEnd)) + 1) / 7);
+  const rows = monthRows(focus);
+
+  const scroller = el("div", "mscroll");
+  const head = el("div", "mhead");
+  ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach((d) => head.append(el("div", "dow", d)));
+  scroller.append(head);
+  for (let w = 0; w < weeks; w++) {
+    const row = el("div", "mweek");
+    row.dataset.start = iso(addDays(winStart, w * 7));
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(winStart, w * 7 + i);
+      const cell = dayCell(d, { other: !sameMonth(d, focus), max: rows >= 6 ? 3 : 4 });
+      cell.dataset.month = `${d.getFullYear()}-${d.getMonth()}`;
+      if (d.getDate() === 1) cell.querySelector(".num span").textContent = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      if (d.getDate() === 1) cell.classList.add("mstart");
+      row.append(cell);
+    }
+    scroller.append(row);
   }
-  body.append(grid);
+  body.append(scroller);
+
+  // Row height: the focused month fills the screen exactly, like before.
+  const sizeRows = () => {
+    const h = scroller.clientHeight - head.offsetHeight;
+    scroller.style.setProperty("--rowh", Math.max(96, Math.floor(h / monthRows(firstOfMonth(state.cursor)))) + "px");
+  };
+  sizeRows();
+
+  // Where to land: an explicit jump (arrows / Today), else the same spot as before the redraw.
+  const rowFor = (dISO) => [...scroller.querySelectorAll(".mweek")].find((r) => r.dataset.start <= dISO && iso(addDays(fromISO(r.dataset.start), 6)) >= dISO);
+  const target = state.mJump || (state.mTop && rowFor(state.mTop.iso) ? null : iso(focus));
+  const behavior = state.mJumpSmooth ? "smooth" : "auto";
+  if (target) {
+    const r = rowFor(target);
+    if (r) {
+      if (behavior === "smooth" && state.mPrevTop != null) scroller.scrollTop = state.mPrevTop;
+      if (behavior === "smooth") { clearTimeout(state.mHold); state.mHolding = true; state.mHold = setTimeout(() => { state.mHolding = false; }, 700); }
+      scroller.scrollTo({ top: r.offsetTop - head.offsetHeight, behavior });
+    }
+  } else {
+    const r = rowFor(state.mTop.iso);
+    scroller.scrollTop = r.offsetTop - head.offsetHeight + state.mTop.off;
+  }
+  state.mJump = null; state.mJumpSmooth = false; state.mPrevTop = null;
+
+  let ticking = false;
+  const onScroll = () => {
+    ticking = false;
+    const top = scroller.scrollTop + head.offsetHeight;
+    const list = scroller.querySelectorAll(".mweek");
+    let topRow = list[0];
+    for (const r of list) { if (r.offsetTop <= top + 1) topRow = r; else break; }
+    state.mTop = { iso: topRow.dataset.start, off: top - topRow.offsetTop };
+    // Focus = the month owning the day a third of the way down the screen.
+    const probeY = top + (scroller.clientHeight - head.offsetHeight) / 3;
+    let probe = topRow;
+    for (const r of list) { if (r.offsetTop <= probeY) probe = r; else break; }
+    const pd = addDays(fromISO(probe.dataset.start), 3);
+    const f = firstOfMonth(pd);
+    if (!state.mHolding && !sameMonth(f, state.cursor)) {
+      state.cursor = f;
+      $("cal-title").textContent = f.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      const key = `${f.getFullYear()}-${f.getMonth()}`;
+      scroller.querySelectorAll(".day").forEach((c) => c.classList.toggle("other", c.dataset.month !== key));
+    }
+    // Near the edge of what's drawn? Redraw around the new month, same spot on screen.
+    const nearTop = scroller.scrollTop < scroller.clientHeight;
+    const nearBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < scroller.clientHeight;
+    if (!state.mHolding && (nearTop || nearBottom) && !sameMonth(f, state.mAnchor)) { state.mAnchor = f; renderCalendar(); }
+  };
+  scroller.addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
+  $("cal-title").textContent = firstOfMonth(state.cursor).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  if (!renderMonth._resize) { renderMonth._resize = true; window.addEventListener("resize", () => { if (state.view === "month") renderCalendar(); }); }
 }
 
 function weekStart(d) { return addDays(d, -d.getDay()); }
@@ -800,7 +871,11 @@ function initFullscreen() {
 // ---------- nav ----------
 function shift(n) {
   const c = state.cursor;
-  if (state.view === "month") state.cursor = new Date(c.getFullYear(), c.getMonth() + n, 1);
+  if (state.view === "month") {
+    state.cursor = new Date(c.getFullYear(), c.getMonth() + n, 1);
+    state.mJump = iso(state.cursor); state.mJumpSmooth = true;
+    const sc = document.querySelector(".mscroll"); state.mPrevTop = sc ? sc.scrollTop : null;
+  }
   else if (state.view === "week") state.cursor = addDays(c, 7 * n);
   else state.cursor = addDays(c, n);
   render();
@@ -808,10 +883,10 @@ function shift(n) {
 
 function wire() {
   $("bucket-seg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; state.bucket = b.dataset.bucket; localStorage.setItem("fm.bucket", state.bucket); render(); });
-  $("view-seg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; state.view = b.dataset.view; localStorage.setItem("fm.view", state.view); if (state.view === "day" && state.selected) state.cursor = fromISO(state.selected); render(); });
+  $("view-seg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; state.view = b.dataset.view; localStorage.setItem("fm.view", state.view); state.mTop = null; if (state.view === "day" && state.selected) state.cursor = fromISO(state.selected); render(); });
   $("prev-btn").addEventListener("click", () => shift(-1));
   $("next-btn").addEventListener("click", () => shift(1));
-  $("today-btn").addEventListener("click", () => { state.cursor = new Date(); render(); });
+  $("today-btn").addEventListener("click", () => { state.cursor = new Date(); state.mJump = iso(firstOfMonth(state.cursor)); render(); });
   $("tomorrow-btn").addEventListener("click", openTomorrow);
   $("quick-add").addEventListener("submit", async (e) => { e.preventDefault(); const v = $("quick-input").value.trim(); if (!v) return; $("quick-input").value = ""; await quickAdd(v); });
   document.addEventListener("keydown", (e) => {

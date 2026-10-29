@@ -95,6 +95,14 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .day .num .count { font-weight: 400; color: var(--ink-3); font-size: 11px; }
 .day .more { font-size: 11px; color: var(--ink-3); }
 
+/* month = continuous scroll of weeks */
+.mscroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; --rowh: 110px; }
+.mhead { position: sticky; top: 0; z-index: 2; background: var(--bg); display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; padding-bottom: 2px; }
+.mweek { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; height: var(--rowh); margin-bottom: 4px; }
+.mweek .day { min-height: 0; transition: background-color .15s, color .15s; }
+.day.mstart { border-left: 3px solid var(--ink-2); }
+.day.mstart .num span:first-child { text-transform: uppercase; letter-spacing: .02em; }
+
 /* ---------- week / day views ---------- */
 .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .week .day { min-height: 420px; }
