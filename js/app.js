@@ -1079,6 +1079,10 @@ function wire() {
   initInstall();
   initAlerts();
   initMini();
+  // TEMP cell picker
+  const cp = $("cells-pick");
+  if (cp) { const v = localStorage.getItem("fm.cells") || ""; cp.value = v; if (v) document.body.dataset.cells = v;
+    cp.addEventListener("change", () => { const x = cp.value; localStorage.setItem("fm.cells", x); if (x) document.body.dataset.cells = x; else delete document.body.dataset.cells; }); }
 }
 
 // ---------- boot ----------

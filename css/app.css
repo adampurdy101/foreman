@@ -241,3 +241,12 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 body.mini-only .app > :not(#mini-root) { display: none !important; }
 body.mini-only #mini-root { display: block; }
 #install-btn { border-color: var(--accent); color: var(--accent); }
+
+/* ---------- TEMP: weekend / next-month cell picker (remove once Adam picks) ---------- */
+body[data-cells="1"] .day.weekend { background: #eceef1; border-color: #dfe2e6; }   body[data-cells="1"] .day.other { background: #f1f2f4; border-color: #e6e8eb; color: #9aa0a6; }
+body[data-cells="2"] .day.weekend { background: #edebe6; border-color: #dfdcd5; }   body[data-cells="2"] .day.other { background: #f2f0ec; border-color: #e7e4de; color: #9b968f; }
+body[data-cells="3"] .day.weekend { background: #e3e5e7; border-color: #d3d6d9; }   body[data-cells="3"] .day.weekend .num { color: #4e5358; } body[data-cells="3"] .day.other { background: #ececed; border-color: #dedfe1; color: #9a9ea3; }
+body[data-cells="4"] .day.weekend { background: #fff; border-color: #b9b9b6; }      body[data-cells="4"] .day.other { background: transparent; border: 1px dashed #d4d4d1; color: #a4a4a1; }
+body[data-cells="5"] .day.weekend { background: #f5efef; border-color: #e8dcdc; }   body[data-cells="5"] .day.weekend .num { color: #5c4a4a; } body[data-cells="5"] .day.other { background: #f7f3f3; border-color: #ebe3e3; color: #a09292; }
+body[data-cells] .day.weekend.other { background: inherit; }
+body[data-cells="4"] .day.weekend.other { background: transparent; border: 1px dashed #c4c4c1; }
