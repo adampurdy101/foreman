@@ -1,6 +1,6 @@
 /* Foreman — light, flat, calm. Dark text on light background, always. */
 :root {
-  --bg: #f4f3f1;
+  --bg: #e3e2df;
   --card: #ffffff;
   --ink: #1f1f1d;
   --ink-2: #5f5e5a;
@@ -67,7 +67,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .cal-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .rail { background: var(--card); border-left: 1px solid var(--line); padding: 12px 14px; overflow: auto; }
 
-.cal-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; background: #e3e2df; border-radius: 8px; padding: 8px 12px; }
+.cal-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; background: #d3d3d1; border: 1.5px solid #7f7f7f; border-radius: 8px; padding: 8px 12px; }
 .cal-head h2 { font-size: 30px; font-weight: 700; letter-spacing: -.01em; min-width: 250px; color: var(--ink); }
 .legend { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; font-size: 12px; }
 
