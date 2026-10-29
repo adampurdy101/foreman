@@ -91,10 +91,10 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .day.weekend { background: #dfe5d6; border-color: #b9c7ac; }
 .day.weekend .num { color: var(--ink-2); }
 .day.weekend.other { background: transparent; }
-.day.past { opacity: 1; border: 1px dashed #b3b3b3; background: #f8f7f3; }
+.day.past { opacity: 1; border: 1px dashed #b3b3b3; background-color: #f8f7f3; }
 .day.past .num { color: #9a9a9a; }
 .day.past .chip, .day.past .mtg, .day.past .meter { opacity: .6; }
-.day.past.weekend { background: #eef1e8; border-style: dashed; }
+.day.past.weekend { background-color: #eef1e8; border-style: dashed; }
 .day.past:hover .chip, .day.past:hover .mtg { opacity: 1; }
 .day.today { border: 3px solid var(--accent); border-left: 7px solid var(--accent); background: #ffffff; }
 .day.today .num { color: var(--accent); }
@@ -273,9 +273,7 @@ body.mini-only #mini-root { display: block; }
 .mhead { background: var(--bg); padding-bottom: 4px; }
 .mhead .dow.td { color: #b8521e; border-bottom-color: #b8521e; }
 
-/* ---------- past days: faint red X + DONE stamp ---------- */
-.day.past::before, .day.past::after { content: ""; position: absolute; left: -10%; top: 50%; width: 120%; height: 2px; background: #c0392b; opacity: .35; transform: rotate(28deg); pointer-events: none; z-index: 1; }
-.day.past::after { transform: rotate(-28deg); }
-.day.past .stamp { position: absolute; right: 6px; bottom: 4px; font-size: 10px; letter-spacing: .14em; color: #9a9a9a; font-weight: 700; border: 1.5px solid #b3b3b3; border-radius: 3px; padding: 0 4px; transform: rotate(-8deg); background: rgba(255,255,255,.7); z-index: 2; pointer-events: none; }
-.day.past > * { position: relative; z-index: 2; }
+/* ---------- past days: corner-to-corner red X + DONE stamp ---------- */
+.day.past { background-image: linear-gradient(to top right, transparent calc(50% - 1.2px), rgba(192,57,43,.38) 50%, transparent calc(50% + 1.2px)), linear-gradient(to top left, transparent calc(50% - 1.2px), rgba(192,57,43,.38) 50%, transparent calc(50% + 1.2px)); }
+.day.past .stamp { position: absolute; right: 6px; bottom: 4px; font-size: 10px; letter-spacing: .14em; color: #9a9a9a; font-weight: 700; border: 1.5px solid #b3b3b3; border-radius: 3px; padding: 0 4px; transform: rotate(-8deg); z-index: 2; pointer-events: none; }
 .day.past .dd { z-index: 3; }
