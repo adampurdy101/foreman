@@ -14,7 +14,7 @@
   --urgent-bg: #fcebeb; --urgent-ink: #791f1f; --urgent-line: #e24b4a;
   --high-bg: #faeeda;   --high-ink: #633806;   --high-line: #ef9f27;
   --normal-bg: #e6f1fb; --normal-ink: #0c447c; --normal-line: #378add;
-  --low-bg: #f1efe8;    --low-ink: #444441;    --low-line: #b4b2a9;
+  --low-bg: #f0f0f0;    --low-ink: #444444;    --low-line: #b5b5b5;
   --home-bg: #e6edf2;   --home-ink: #1f3a4d;   --home-line: #4f7a99;
 }
 * { box-sizing: border-box; }
