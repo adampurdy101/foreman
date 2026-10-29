@@ -88,13 +88,13 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .day { position: relative; min-height: 96px; overflow: hidden; background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 4px 5px; display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
 .day.other { background: #fcf6ec; border-color: #ecdfc9; color: var(--ink-3); }
 .day.other .num { font-weight: 400; font-size: 12px; }
-.day.weekend { background: #ffe6cc; border-color: #f7cfa8; }
+.day.weekend { background: #efeeec; border-color: #d9d8d5; }
 .day.weekend .num { color: var(--ink-2); }
 .day.weekend.other { background: transparent; }
 .day.past { opacity: 1; border: 1px dashed #b3b3b3; background: #fafafa; }
 .day.past .num { color: #9a9a9a; }
 .day.past .chip, .day.past .mtg, .day.past .meter { opacity: .6; }
-.day.past.weekend { background: #fff5eb; border-style: dashed; }
+.day.past.weekend { background: #f4f3f1; border-style: dashed; }
 .day.past:hover .chip, .day.past:hover .mtg { opacity: 1; }
 .day.today { border: 3px solid var(--accent); border-left: 7px solid var(--accent); background: #ffffff; }
 .day.today .num { color: var(--accent); }
@@ -245,8 +245,8 @@ body.mini-only #mini-root { display: block; }
 #install-btn { border-color: var(--accent); color: var(--accent); }
 
 /* ---------- month outline — always on ---------- */
-.day.mstart { border-left: 3px solid var(--ink-2) !important; }
-.day.mtop   { border-top:  3px solid var(--ink-2) !important; }
+.day.mstart { border-left: 4px solid #3a3a3a !important; }
+.day.mtop   { border-top:  4px solid #3a3a3a !important; }
 .day.today.mstart { border-left: 6px solid var(--accent) !important; }
 
 /* ---------- Today button — pronounced, easy to grab ---------- */
@@ -258,7 +258,7 @@ body.mini-only #mini-root { display: block; }
 .quick { flex-wrap: nowrap; }
 #tell-btn { white-space: nowrap; }
 
-.day.weekend.other { background: #fff0e0; }
+.day.weekend.other { background: #f3f2f0; }
 .day.today.mstart { border-left: 7px solid var(--accent) !important; }
 
 .ver { margin-left: auto; font-size: 11px; color: var(--ink-3); letter-spacing: .04em; }
