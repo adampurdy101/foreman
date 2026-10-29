@@ -1079,19 +1079,6 @@ function wire() {
   initInstall();
   initAlerts();
   initMini();
-  // TEMP cell picker
-  const cp = $("cells-pick");
-  if (cp) { const v = localStorage.getItem("fm.cells") || ""; cp.value = v; if (v) document.body.dataset.cells = v;
-    cp.addEventListener("change", () => { const x = cp.value; localStorage.setItem("fm.cells", x); if (x) document.body.dataset.cells = x; else delete document.body.dataset.cells; }); }
-  const kp = $("look-pick");
-  const applyLook = (x) => { const b = document.body.dataset; if (x) b.look = x; else delete b.look;
-    if (["walnut", "concrete", "steel"].includes(x)) b.dwell = "1"; else delete b.dwell;
-    if (["hwalnut", "hsteel"].includes(x)) b.hybrid = "1"; else delete b.hybrid; };
-  if (kp) { const v = localStorage.getItem("fm.look") || ""; kp.value = v; applyLook(v);
-    kp.addEventListener("change", () => { const x = kp.value; localStorage.setItem("fm.look", x); applyLook(x); render(); }); }
-  const lp = $("line-pick");
-  if (lp) { const v = localStorage.getItem("fm.line") || ""; lp.value = v; if (v) document.body.dataset.line = v;
-    lp.addEventListener("change", () => { const x = lp.value; localStorage.setItem("fm.line", x); if (x) document.body.dataset.line = x; else delete document.body.dataset.line; }); }
 }
 
 // ---------- boot ----------
