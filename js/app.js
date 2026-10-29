@@ -1083,6 +1083,9 @@ function wire() {
   const cp = $("cells-pick");
   if (cp) { const v = localStorage.getItem("fm.cells") || ""; cp.value = v; if (v) document.body.dataset.cells = v;
     cp.addEventListener("change", () => { const x = cp.value; localStorage.setItem("fm.cells", x); if (x) document.body.dataset.cells = x; else delete document.body.dataset.cells; }); }
+  const lp = $("line-pick");
+  if (lp) { const v = localStorage.getItem("fm.line") || ""; lp.value = v; if (v) document.body.dataset.line = v;
+    lp.addEventListener("change", () => { const x = lp.value; localStorage.setItem("fm.line", x); if (x) document.body.dataset.line = x; else delete document.body.dataset.line; }); }
 }
 
 // ---------- boot ----------

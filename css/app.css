@@ -250,3 +250,13 @@ body[data-cells="4"] .day.weekend { background: #fff; border-color: #b9b9b6; }  
 body[data-cells="5"] .day.weekend { background: #f5efef; border-color: #e8dcdc; }   body[data-cells="5"] .day.weekend .num { color: #5c4a4a; } body[data-cells="5"] .day.other { background: #f7f3f3; border-color: #ebe3e3; color: #a09292; }
 body[data-cells] .day.weekend.other { background: inherit; }
 body[data-cells="4"] .day.weekend.other { background: transparent; border: 1px dashed #c4c4c1; }
+
+/* ---------- month outline — ALWAYS on, beats every cell color ---------- */
+:root { --step: var(--ink-2); --step-w: 3px; }
+body .day.mstart, body[data-cells] .day.mstart { border-left: var(--step-w) solid var(--step) !important; }
+body .day.mtop,   body[data-cells] .day.mtop   { border-top:  var(--step-w) solid var(--step) !important; }
+body .day.today.mstart { border-left: var(--step-w) solid var(--accent) !important; }
+body[data-line="orange"]  { --step: #b8521e; }
+body[data-line="orange2"] { --step: #b8521e; --step-w: 4px; }
+body[data-line="orange2"] .day.mstart .num > span:first-child { color: #b8521e; font-weight: 700; }
+body[data-line="orange2"] .day.mtop .num, body[data-line="orange2"] .day.mstart .num { color: inherit; }
