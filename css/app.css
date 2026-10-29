@@ -340,3 +340,16 @@ body[data-look] .topbar .btn, body[data-look] .topbar select { white-space: nowr
 body[data-look] .quick { min-width: 220px; flex: 1 1 260px; }
 body[data-look] .quick .btn.sm { padding: 3px 8px; }
 #tell-btn { white-space: nowrap; }
+
+/* Cells + Line dropdowns win over any Look */
+body[data-cells="1"] .mweek .day.weekend { background: #eceef1; }  body[data-cells="1"] .mweek .day.other { background: #f1f2f4; color: #9aa0a6; }
+body[data-cells="2"] .mweek .day.weekend { background: #edebe6; }  body[data-cells="2"] .mweek .day.other { background: #f2f0ec; color: #9b968f; }
+body[data-cells="3"] .mweek .day.weekend { background: #e3e5e7; }  body[data-cells="3"] .mweek .day.other { background: #ececed; color: #9a9ea3; }
+body[data-cells="4"] .mweek .day.weekend { background: #fff; }     body[data-cells="4"] .mweek .day.other { background: transparent; color: #a4a4a1; }
+body[data-cells="5"] .mweek .day.weekend { background: #f5efef; }  body[data-cells="5"] .mweek .day.other { background: #f7f3f3; color: #a09292; }
+body[data-cells="4"]:not([data-look]) .mweek .day.other { border: 1px dashed #d4d4d1; }
+body[data-cells="4"]:not([data-look]) .mweek .day.weekend { border-color: #b9b9b6; }
+body[data-cells] .mweek .day.today { background: var(--card); }
+body[data-look][data-line="orange"]  { --step: #b8521e; }
+body[data-look][data-line="orange2"] { --step: #b8521e; --step-w: 4px; }
+body[data-look][data-line="orange2"] .day.mstart .num > span:first-child { color: #b8521e; }
